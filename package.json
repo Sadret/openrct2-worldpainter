@@ -1,0 +1,20 @@
+{
+    "name": "openrct2-worldpainter",
+    "version": "1.0.0",
+    "description": "OpenRCT2 WorldPainter Plug-In",
+    "author": "Sadret",
+    "type": "module",
+    "license": "GPL-3.0",
+    "scripts": {
+        "build-develop": "rollup -c rollup.config.develop.js",
+        "build-release": "rollup -c rollup.config.release.js"
+    },
+    "devDependencies": {
+        "@rollup/plugin-node-resolve": "^15.0.1",
+        "@rollup/plugin-terser": "^0.4.0",
+        "@rollup/plugin-typescript": "^11.1.1",
+        "rollup": "^3.17.2",
+        "tslib": "^2.5.2",
+        "typescript": "^5.0.4"
+    }
+}

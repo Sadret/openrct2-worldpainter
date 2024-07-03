@@ -16,5 +16,8 @@
         "rollup": "^3.17.2",
         "tslib": "^2.5.2",
         "typescript": "^5.0.4"
+    },
+    "dependencies": {
+        "openrct2-flexui": "^0.1.0-prerelease.12"
     }
 }

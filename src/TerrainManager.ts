@@ -110,6 +110,8 @@ function getSurfaceZ(surface: SurfaceElement): Num4 {
 function setSurfaceZ(surface: SurfaceElement, fractional: Num4): void {
     // TODO: negative base height (lower rest)
     // TODO: positive overflow
+    // TODO: don't touch map borders
+    // TODO: symmetric behaviour
 
     let integral = fractional.map(corner => Math.floor(corner));
 

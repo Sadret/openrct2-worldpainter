@@ -12,7 +12,7 @@ export const isActive = store(false);
 const selectedDragMode = store(1);
 export const dragMode = compute<number, DragMode>(selectedDragMode, i => (["none", "apply", "move"] satisfies DragMode[])[i]);
 export const sensitivity = store(3);
-export const brushWidth = store(120);
+export const brushWidth = store(3);
 const brushLengthInput = store(8);
 const squareAspectRatio = store(true);
 export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
@@ -67,7 +67,7 @@ const win = window({
                             text: "Width:",
                         }),
                         spinner({
-                            minimum: 0,
+                            minimum: 1,
                             value: twoway(brushWidth),
                             width: "1w",
                         }),
@@ -86,7 +86,7 @@ const win = window({
                             disabled: squareAspectRatio,
                         }),
                         spinner({
-                            minimum: 0,
+                            minimum: 1,
                             value: twoway(brushLengthInput),
                             width: "1w",
                             disabled: squareAspectRatio,

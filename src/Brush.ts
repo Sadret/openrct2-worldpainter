@@ -5,22 +5,26 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { brushLength, brushWidth, isActive } from './Window';
+import { brushLength, brushWidth, dragMode, isActive, sensitivity } from './Window';
 import type { ProfileFun } from "./types";
 import * as TerrainManager from "./TerrainManager";
+import { button } from 'openrct2-flexui';
 
 const cos1 = Math.cos(1);
 
+// TODO: UI, valley functions
 let flat: ProfileFun = () => 1;
-let gauss: ProfileFun = (x, y) => Math.pow(256, -(x * x + y * y));
+let gauss: ProfileFun = (x, y) => 256 ** -(x * x + y * y);
 let volcano: ProfileFun = (x, y) => 1 - Math.abs(1 - 1.5 * gauss(x, y));
 let sine: ProfileFun = (x, y) => 0.5 + Math.cos(Math.min(Math.sqrt(x * x + y * y), 1) * Math.PI) / 2;
 let sineCap: ProfileFun = (x, y) => (Math.cos(Math.min(Math.sqrt(x * x + y * y), 1)) - cos1) / (1 - cos1);
 let sphere: ProfileFun = (x, y) => Math.sqrt(1 - x * x - y * y) || 0;
-let profileFun: ProfileFun = volcano;
+let profileFun: ProfileFun = flat;
 
-let center: CoordsXY = { x: 0, y: 0 };
-let cursorLastVertical: number | undefined = undefined;
+let down = false;
+let handle = 0;
+let center = { x: 0, y: 0 };
+let cursorLastVertical = 0;
 
 const brush: ToolDesc = {
     id: "worldpainter-brush",
@@ -32,22 +36,39 @@ const brush: ToolDesc = {
         isActive.set(true);
     },
     onDown: (e: ToolEventArgs) => {
-        cursorLastVertical = e.screenCoords.y;
+        down = true;
+        if (dragMode.get() === "apply")
+            cursorLastVertical = e.screenCoords.y;
+        else {
+            const msDelay = 1 << (10 - Math.min(5, sensitivity.get()));
+            const delta = 2 ** Math.max(0, sensitivity.get() - 5);
+            apply(delta);
+            handle = context.setInterval(() => apply(delta), msDelay);
+        }
     },
     onMove: (e: ToolEventArgs) => {
-        if (cursorLastVertical) {
+        if (dragMode.get() === "apply" && down) {
             const cursorCurrentVertical = e.screenCoords.y;
             const cursorVerticalDiff = cursorLastVertical - cursorCurrentVertical;
             if (cursorVerticalDiff !== 0)
-                apply(cursorVerticalDiff);
+                apply(cursorVerticalDiff * 2 ** (ui.mainViewport.zoom - 4));
             cursorLastVertical = cursorCurrentVertical;
-        } else if (e.mapCoords) {
-            ui.tileSelection.tiles = [center = e.mapCoords];
         }
+        if (dragMode.get() === "move" || !down)
+            if (e.mapCoords && e.mapCoords.x && e.mapCoords.y) {
+                center = e.mapCoords;
+                const sx = center.x - ((brushWidth.get() >> 1) << 5), sy = center.y - ((brushLength.get() >> 1) << 5);
+                const ex = sx + (brushWidth.get() - 1 << 5), ey = sy + (brushLength.get() - 1 << 5);
+                ui.tileSelection.range = {
+                    leftTop: { x: sx, y: sy, },
+                    rightBottom: { x: ex, y: ey, },
+                };
+            }
     },
     onUp: (e: ToolEventArgs) => {
         TerrainManager.reset();
-        cursorLastVertical = undefined;
+        down = false;
+        context.clearInterval(handle);
     },
     onFinish: () => {
         ui.mainViewport.visibilityFlags &= ~(1 << 7);
@@ -59,16 +80,17 @@ export function init(): void {
     isActive.subscribe(value => value ? ui.activateTool(brush) : (ui.tool && ui.tool.id === "worldpainter-brush" && ui.tool.cancel()));
 }
 
-function apply(cursorVerticalDiff: number): void {
-    // TODO: off by one, even and uneven
+function apply(delta: number = 1): void {
     const cx = center.x >> 5, cy = center.y >> 5;
-    const rx = brushWidth.get() >> 1, ry = brushLength.get() >> 1;
+    const dx = brushWidth.get(), dy = brushLength.get();
+    const sx = Math.ceil(cx - dx / 2), sy = Math.ceil(cy - dy / 2);
+    const ex = sx + dx, ey = sy + dy;
 
     const profile: TerrainManager.ProfileData = {};
-    for (let x = cx - rx; x <= cx + rx; x++) {
+    for (let x = sx; x <= ex; x++) {
         profile[x] = {};
-        for (let y = cy - ry; y <= cy + ry; y++)
-            profile[x][y] = profileFun((x - cx) / rx, (y - cy) / ry) * cursorVerticalDiff / (1 << 4) * Math.pow(2, ui.mainViewport.zoom);
+        for (let y = sy; y <= ey; y++)
+            profile[x][y] = profileFun((x - cx) / dx, (y - cy) / dy) * delta;
     }
-    TerrainManager.apply(cx - rx, cx + rx, cy - ry, cy + ry, profile);
+    TerrainManager.apply(sx, ex, sy, ey, profile);
 }

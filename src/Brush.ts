@@ -5,21 +5,10 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { brushLength, brushWidth, dragMode, isActive, sensitivity } from './Window';
+import { brushLength, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
 import type { ProfileFun } from "./types";
 import * as TerrainManager from "./TerrainManager";
 import { button } from 'openrct2-flexui';
-
-const cos1 = Math.cos(1);
-
-// TODO: UI, valley functions
-let flat: ProfileFun = () => 1;
-let gauss: ProfileFun = (x, y) => 256 ** -(x * x + y * y);
-let volcano: ProfileFun = (x, y) => 1 - Math.abs(1 - 1.5 * gauss(x, y));
-let sine: ProfileFun = (x, y) => 0.5 + Math.cos(Math.min(Math.sqrt(x * x + y * y), 1) * Math.PI) / 2;
-let sineCap: ProfileFun = (x, y) => (Math.cos(Math.min(Math.sqrt(x * x + y * y), 1)) - cos1) / (1 - cos1);
-let sphere: ProfileFun = (x, y) => Math.sqrt(1 - x * x - y * y) || 0;
-let profileFun: ProfileFun = flat;
 
 let down = false;
 let handle = 0;
@@ -87,10 +76,11 @@ function apply(delta: number = 1): void {
     const ex = sx + dx, ey = sy + dy;
 
     const profile: TerrainManager.ProfileData = {};
+    console.log(sx, ex, sy, ey, cx, cy, dx, dy);
     for (let x = sx; x <= ex; x++) {
         profile[x] = {};
         for (let y = sy; y <= ey; y++)
-            profile[x][y] = profileFun((x - cx) / dx, (y - cy) / dy) * delta;
+            profile[x][y] = profileFun.get()((x - cx) / dx * 2, (y - cy) / dy * 2) * delta;
     }
     TerrainManager.apply(sx, ex, sy, ey, profile);
 }

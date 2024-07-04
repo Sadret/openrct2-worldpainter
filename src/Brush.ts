@@ -76,7 +76,6 @@ function apply(delta: number = 1): void {
     const ex = sx + dx, ey = sy + dy;
 
     const profile: TerrainManager.ProfileData = {};
-    console.log(sx, ex, sy, ey, cx, cy, dx, dy);
     for (let x = sx; x <= ex; x++) {
         profile[x] = {};
         for (let y = sy; y <= ey; y++)

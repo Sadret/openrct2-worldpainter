@@ -6,7 +6,12 @@
  *****************************************************************************/
 
 /** input and output in [-1,1] */
-export type ProfileFun = (x: number, y: number) => number;
+export type ProfileFun1D = (r: number) => number;
+
+/** input and output in [-1,1] */
+export type ProfileFun2D = (x: number, y: number) => number;
+
+export type ProfileModifier = (f: ProfileFun1D, p: number) => ProfileFun1D;
 
 export type DragMode = "none" | "apply" | "move";
 

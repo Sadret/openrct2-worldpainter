@@ -1,4 +1,4 @@
-import { ProfileFun } from './types';
+import { ProfileFun2D } from './types';
 /*****************************************************************************
  * Copyright (c) 2024 Sadret
  *

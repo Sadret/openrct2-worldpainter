@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 import { brushLength, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
-import type { ProfileFun } from "./types";
+import type { ProfileFun2D } from "./types";
 import * as TerrainManager from "./TerrainManager";
 import { button } from 'openrct2-flexui';
 
@@ -70,9 +70,9 @@ export function init(): void {
 }
 
 function apply(delta: number = 1): void {
-    const cx = center.x >> 5, cy = center.y >> 5;
     const dx = brushWidth.get(), dy = brushLength.get();
-    const sx = Math.ceil(cx - dx / 2), sy = Math.ceil(cy - dy / 2);
+    const sx = Math.ceil((center.x >> 5) - dx / 2), sy = Math.ceil((center.y >> 5) - dy / 2);
+    const cx = sx + dx / 2, cy = sy + dy / 2;
     const ex = sx + dx, ey = sy + dy;
 
     const profile: TerrainManager.ProfileData = {};

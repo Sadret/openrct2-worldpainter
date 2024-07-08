@@ -6,8 +6,8 @@
  *****************************************************************************/
 
 import { button, checkbox, compute, dropdown, groupbox, horizontal, label, spinner, store, twoway, window } from "openrct2-flexui";
-import { BrushMode, DragMode, ProfileFun } from './types';
-import { crater, createImage, flat, gauss, inverted, sine, sine2, sineCap, sphere, volcano } from "./profiles";
+import { BrushMode, DragMode, ProfileFun1D, ProfileFun2D, ProfileModifier } from './types';
+import { linear, createProfileImage, constant, gauss, circle, cubic, invCircle, quadratic, invQuadratic, toEuclidean, toSupremum, toManhattan, createShapeImage, unmodified, crater, mesa2, capped, mesa } from './profiles';
 
 export const isActive = store(false);
 const selectedDragMode = store(1);
@@ -19,7 +19,12 @@ const squareAspectRatio = store(true);
 export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
 const selectedBrushMode = store(1);
 export const brushMode = compute<number, BrushMode>(selectedBrushMode, i => (["absolute", "relative"] satisfies BrushMode[])[i]);
-export const profileFun = store<ProfileFun>(flat);
+
+const baseProfile = store<ProfileFun1D>(constant);
+const brushShape = store<(f: ProfileFun1D) => ProfileFun2D>(toEuclidean);
+const profileModifier = store<ProfileModifier>(unmodified);
+const profileParameter = store(50);
+export const profileFun = compute(baseProfile, brushShape, profileModifier, profileParameter, (f, s, m, p) => s(f === constant ? f : m(f, p / 100)));
 
 const win = window({
     title: "WorldPainter",
@@ -67,54 +72,10 @@ const win = window({
                     content: [
                         label({
                             text: "Width:",
-                        }),
-                        spinner({
-                            minimum: 1,
-                            value: twoway(brushWidth),
-                            width: "1w",
-                        }),
-                        label({ text: "", width: "0.5w", }),
-                        checkbox({
-                            text: "1:1 aspect ratio",
-                            isChecked: twoway(squareAspectRatio),
-                            width: "2w",
-                        }),
-                    ],
-                }),
-                horizontal({
-                    content: [
-                        label({
-                            text: "Length:",
-                            disabled: squareAspectRatio,
-                        }),
-                        spinner({
-                            minimum: 1,
-                            value: twoway(brushLengthInput),
-                            width: "1w",
-                            disabled: squareAspectRatio,
-                        }),
-                        label({ text: "", width: "0.5w", }),
-                        button({
-                            text: "flip",
-                            onClick: () => {
-                                const width = brushWidth.get();
-                                brushWidth.set(brushLengthInput.get());
-                                brushLengthInput.set(width);
-                            },
-                            height: 14,
-                            width: "2w",
-                            disabled: squareAspectRatio,
-                        }),
-                    ],
-                }),
-                horizontal({
-                    content: [
-                        label({
-                            text: "Width:",
                             width: "2w",
                         }),
                         spinner({
-                            minimum: 0,
+                            minimum: 2,
                             value: twoway(brushWidth),
                             width: "2w",
                         }),
@@ -137,7 +98,7 @@ const win = window({
                             width: "2w",
                         }),
                         spinner({
-                            minimum: 0,
+                            minimum: 2,
                             value: twoway(brushLengthInput),
                             width: "2w",
                             disabled: squareAspectRatio,
@@ -167,26 +128,74 @@ const win = window({
                 }),
             ],
         }),
-        horizontal({
-            content: [flat, gauss, volcano, sine, sineCap, sphere, sine2, crater].map(
-                profile => button({
-                    width: 40,
-                    height: 40,
-                    image: createImage(profile),
-                    onClick: () => profileFun.set(profile),
+        groupbox({
+            text: "Basic profile",
+            content: [
+                horizontal({
+                    content: [constant, linear, quadratic, cubic, gauss, circle, invQuadratic, invCircle].map(
+                        profile => button({
+                            width: 40,
+                            height: 40,
+                            image: createProfileImage(profile),
+                            onClick: () => baseProfile.set(profile),
+                            isPressed: compute(baseProfile, active => active === profile),
+                            tooltip: "hello",
+                        }),
+                    ),
                 }),
-            ),
+            ],
         }),
         horizontal({
-            content: [flat, gauss, volcano, sine, sineCap, sphere, sine2, crater].map(profile => inverted(profile)).map(
-                profile => button({
-                    width: 40,
-                    height: 40,
-                    image: createImage(profile),
-                    onClick: () => profileFun.set(profile),
-                    disabled: compute(dragMode, mode => mode === "apply"),
+            content: [
+                groupbox({
+                    text: "Brush shape",
+                    content: [
+                        horizontal({
+                            content: [toSupremum, toEuclidean, toManhattan].map(
+                                shape => button({
+                                    width: 40,
+                                    height: 40,
+                                    image: createShapeImage(shape),
+                                    onClick: () => brushShape.set(shape),
+                                    isPressed: compute(brushShape, active => active === shape),
+                                    tooltip: "hello",
+                                }),
+                            ),
+                        }),
+                    ],
                 }),
-            ),
+                groupbox({
+                    text: "Profile modifier",
+                    content: [
+                        horizontal({
+                            content: [unmodified, crater, mesa, mesa2, capped].map(
+                                modifier => button({
+                                    width: 40,
+                                    height: 40,
+                                    image: compute(baseProfile, profileParameter, (profile, param) => createProfileImage(profile === constant ? constant : modifier(profile, param / 100))),
+                                    onClick: () => profileModifier.set(modifier),
+                                    isPressed: compute(profileModifier, active => active === modifier),
+                                    tooltip: "hello",
+                                }),
+                            ),
+                        }),
+                        horizontal({
+                            content: [
+                                label({
+                                    text: "Parameter:",
+                                }),
+                                spinner({
+                                    minimum: 0,
+                                    maximum: 100,
+                                    step: 5,
+                                    format: to2Decimals,
+                                    value: twoway(profileParameter),
+                                }),
+                            ],
+                        }),
+                    ],
+                }),
+            ],
         }),
     ],
     onOpen: () => isActive.set(true),
@@ -200,4 +209,11 @@ export function open(): void {
 
 export function close(): void {
     win.close();
+}
+
+function to2Decimals(value: number): string {
+    let str = String(value / 100);
+    if (str.length < 2) str += ".";
+    while (str.length < 4) str += "0";
+    return str;
 }

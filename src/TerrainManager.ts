@@ -93,16 +93,9 @@ function getZ(x: number, y: number): Num4 {
     return z;
 }
 
-export function apply(xMin: number, xMax: number, yMin: number, yMax: number, data: ProfileData): void {
-    xMin = Math.max(xMin, 1);
-    xMax = Math.min(xMax, map.size.x - 1);
-    yMin = Math.max(yMin, 1);
-    yMax = Math.min(yMax, map.size.y - 1);
-
-    for (let x = xMin; x < xMax; x++)
-        for (let y = yMin; y < yMax; y++)
-            setZ(x, y, add(
-                getZ(x, y),
-                [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => data[x + dx][y + dy]) as Num4),
-            );
+export function apply(tiles: CoordsXY[], data: ProfileData): void {
+    tiles.forEach(({ x, y }) => setZ(x, y, add(
+        getZ(x, y),
+        [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => data[x + dx][y + dy]) as Num4),
+    ));
 }

@@ -13,4 +13,6 @@ export type ProfileFun2D = (x: number, y: number) => number;
 
 export type ProfileModifier = (f: ProfileFun1D, p: number) => ProfileFun1D;
 
+export type Norm = (x: number, y: number) => number;
+
 export type DragMode = "none" | "apply" | "move";

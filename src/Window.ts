@@ -6,8 +6,8 @@
  *****************************************************************************/
 
 import { button, checkbox, compute, dropdown, groupbox, horizontal, label, spinner, store, twoway, window } from "openrct2-flexui";
-import { DragMode, ProfileFun1D, ProfileFun2D, ProfileModifier } from './types';
-import { linear, createProfileImage, constant, gauss, circle, cubic, invCircle, quadratic, invQuadratic, toEuclidean, toSupremum, toManhattan, createShapeImage, unmodified, crater, mesa2, capped, mesa } from './profiles';
+import { DragMode } from './types';
+import { linear, createProfileImage, constant, gauss, circle, cubic, quadratic, invQuadratic, euclidean, supremum, manhattan, createShapeImage, unmodified, crater, mesa2, capped, mesa, toFun2D } from './profiles';
 
 export const isActive = store(false);
 const selectedDragMode = store(1);
@@ -18,11 +18,11 @@ const brushLengthInput = store(8);
 const squareAspectRatio = store(true);
 export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
 
-const baseProfile = store<ProfileFun1D>(constant);
-const brushShape = store<(f: ProfileFun1D) => ProfileFun2D>(toEuclidean);
-const profileModifier = store<ProfileModifier>(unmodified);
+const baseProfile = store(constant);
+export const brushNorm = store(euclidean);
+const profileModifier = store(unmodified);
 const profileParameter = store(50);
-export const profileFun = compute(baseProfile, brushShape, profileModifier, profileParameter, (f, s, m, p) => s(f === constant ? f : m(f, p / 100)));
+export const profileFun = compute(baseProfile, brushNorm, profileModifier, profileParameter, (f, s, m, p) => toFun2D(f === constant ? f : m(f, p / 100), s));
 
 const win = window({
     title: "WorldPainter",
@@ -115,7 +115,7 @@ const win = window({
             text: "Basic profile",
             content: [
                 horizontal({
-                    content: [constant, linear, quadratic, cubic, gauss, circle, invQuadratic, invCircle].map(
+                    content: [constant, linear, quadratic, cubic, gauss, circle, invQuadratic].map(
                         profile => button({
                             width: 40,
                             height: 40,
@@ -134,13 +134,13 @@ const win = window({
                     text: "Brush shape",
                     content: [
                         horizontal({
-                            content: [toSupremum, toEuclidean, toManhattan].map(
+                            content: [supremum, euclidean, manhattan].map(
                                 shape => button({
                                     width: 40,
                                     height: 40,
                                     image: createShapeImage(shape),
-                                    onClick: () => brushShape.set(shape),
-                                    isPressed: compute(brushShape, active => active === shape),
+                                    onClick: () => brushNorm.set(shape),
+                                    isPressed: compute(brushNorm, active => active === shape),
                                     tooltip: "hello",
                                 }),
                             ),

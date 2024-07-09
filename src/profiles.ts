@@ -5,7 +5,7 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { ProfileFun1D, ProfileFun2D, ProfileModifier } from './types';
+import { Norm, ProfileFun1D, ProfileModifier } from './types';
 
 export const constant: ProfileFun1D = () => 1;
 export const linear: ProfileFun1D = r => 1 - r;
@@ -16,16 +16,11 @@ export const circle: ProfileFun1D = r => Math.sqrt(1 - r ** 2);
 export const invQuadratic: ProfileFun1D = r => (r - 1) ** 2;
 export const invCircle: ProfileFun1D = r => 1 - Math.sqrt(1 - (1 - r) ** 2); // ugly and does not really top out at 1
 
-export function toFun2D(f: ProfileFun1D, norm: (x: number, y: number) => number): ProfileFun2D {
-    return (x, y) => {
-        const r = norm(x, y);
-        return r > 1 ? 0 : f(r);
-    };
-};
+export const toFun2D = (f: ProfileFun1D, norm: (x: number, y: number) => number) => (x: number, y: number) => f(Math.min(norm(x, y), 1));
 
-export const toSupremum = (f: ProfileFun1D) => toFun2D(f, (x, y) => Math.max(Math.abs(x), Math.abs(y)));
-export const toEuclidean = (f: ProfileFun1D) => toFun2D(f, (x, y) => Math.sqrt(x ** 2 + y ** 2));
-export const toManhattan = (f: ProfileFun1D) => toFun2D(f, (x, y) => Math.abs(x) + Math.abs(y));
+export const supremum: Norm = (x, y) => Math.max(Math.abs(x), Math.abs(y));
+export const euclidean: Norm = (x, y) => Math.sqrt(x ** 2 + y ** 2);
+export const manhattan: Norm = (x, y) => Math.abs(x) + Math.abs(y);
 
 export const unmodified: ProfileModifier = f => f;
 export const crater: ProfileModifier = (f, p) => r => 1 - Math.abs(f(r) / (1 - p / 2) - 1);
@@ -95,7 +90,7 @@ const colMap = [
     90, // 0b1111
 ];
 
-export function createShapeImage(shapeFun: typeof toEuclidean): number {
+export function createShapeImage(norm: typeof euclidean): number {
     const range = ui.imageManager.allocate(1);
     if (!range) return context.getIcon("empty");
     const id = range.start;
@@ -103,7 +98,7 @@ export function createShapeImage(shapeFun: typeof toEuclidean): number {
     const data = new Uint8Array(40 * 40);
     for (let x = 4; x < 36; x++)
         for (let y = 4; y < 36; y++)
-            if (shapeFun(constant)(1 / 32 + (x - 20) / 16, 1 / 32 + (y - 20) / 16) > 0)
+            if (norm(1 / 32 + (x - 20) / 16, 1 / 32 + (y - 20) / 16) <= 1)
                 data[x + 40 * y] = 90;
 
     for (let x = 4; x < 36; x++)

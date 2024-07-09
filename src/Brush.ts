@@ -5,7 +5,7 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { brushLength, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
+import { brushLength, brushNorm, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
 import * as TerrainManager from "./TerrainManager";
 
 let down = false;
@@ -44,12 +44,21 @@ const brush: ToolDesc = {
         if (dragMode.get() === "move" || !down)
             if (e.mapCoords && e.mapCoords.x && e.mapCoords.y) {
                 center = e.mapCoords;
-                const sx = center.x - ((brushWidth.get() >> 1) << 5), sy = center.y - ((brushLength.get() >> 1) << 5);
-                const ex = sx + (brushWidth.get() - 1 << 5), ey = sy + (brushLength.get() - 1 << 5);
-                ui.tileSelection.range = {
-                    leftTop: { x: sx, y: sy, },
-                    rightBottom: { x: ex, y: ey, },
-                };
+
+                const dx = brushWidth.get(), dy = brushLength.get();
+                const sx = Math.ceil((center.x >> 5) - dx / 2), sy = Math.ceil((center.y >> 5) - dy / 2);
+                const cx = sx + dx / 2, cy = sy + dy / 2;
+                const ex = sx + dx, ey = sy + dy;
+
+                const norm = brushNorm.get();
+                const tiles: CoordsXY[] = [];
+
+                for (let x = sx; x < ex; x++)
+                    for (let y = sy; y < ey; y++)
+                        if (norm((x + 0.5 - cx) / dx * 2, (y + 0.5 - cy) / dy * 2) <= 1)
+                            tiles.push({ x: x << 5, y: y << 5 });
+
+                ui.tileSelection.tiles = tiles;
             }
     },
     onUp: (e: ToolEventArgs) => {
@@ -73,11 +82,20 @@ function apply(delta: number = 1): void {
     const cx = sx + dx / 2, cy = sy + dy / 2;
     const ex = sx + dx, ey = sy + dy;
 
+    const norm = brushNorm.get();
+    const tiles: CoordsXY[] = [];
+
+    const profileFunction = profileFun.get();
     const profile: TerrainManager.ProfileData = {};
+
     for (let x = sx; x <= ex; x++) {
         profile[x] = {};
-        for (let y = sy; y <= ey; y++)
-            profile[x][y] = profileFun.get()((x - cx) / dx * 2, (y - cy) / dy * 2) * delta;
+        for (let y = sy; y <= ey; y++) {
+            profile[x][y] = profileFunction((x - cx) / dx * 2, (y - cy) / dy * 2) * delta;
+            if (norm((x + 0.5 - cx) / dx * 2, (y + 0.5 - cy) / dy * 2) <= 1)
+                tiles.push({ x: x, y: y });
+        }
     }
-    TerrainManager.apply(sx, ex, sy, ey, profile);
+
+    TerrainManager.apply(tiles, profile);
 }

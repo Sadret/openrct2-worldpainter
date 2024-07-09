@@ -28,42 +28,45 @@ export const mesa: ProfileModifier = (f, p) => p < 1 ? r => Math.min(f(r), (1 - 
 export const mesa2: ProfileModifier = (f, p) => r => r < p ? 1 : f((r - p) / (1 - p));
 export const capped: ProfileModifier = (f, p) => { const fp = f(1 - p); return fp < 1 ? r => (f(r * (1 - p)) - fp) / (1 - fp) : constant; };
 
-// export const inverted: ProfileModifier = f => r => -f(r);
+export const inverted = (f: ProfileFun1D) => (r: number) => -f(r);
 
 export function createProfileImage(profile: ProfileFun1D): number {
     const range = ui.imageManager.allocate(1);
     if (!range) return context.getIcon("empty");
     const id = range.start;
 
-    const data = new Uint8Array(40 * 40);
-    for (let x = 0; x < 40; x++) {
-        let z = (x < 4 || x >= 36) ? 0 : profile(Math.abs(31 / 32 + (4 - x) / 16));
+    const imgH = 24, b = 4, shpH = imgH - 2 * b, shpW = shpH * 2, imgW = shpW + 2 * b;
+    const offset = (profile(1) + profile(0.5) >= 0) ? 0 : shpH;
+
+    const data = new Uint8Array(imgW * imgH);
+    for (let x = 0; x < imgW; x++) {
+        let z = (x < b || x >= imgW - b) ? 0 : profile(Math.abs((shpW - 1) / shpW + (b - x) / (shpW / 2)));
         let y;
-        for (y = 0; -31 / 32 + (y - 4) / 16 <= z; y++)
-            data[x + 40 * (39 - y)] = 90; // inner filling
+        for (y = 0; 1 / shpH / 2 + (y - offset - b) / shpH <= z; y++)
+            data[x + imgW * (imgH - 1 - y)] = 90; // inner filling
 
     }
-    for (let y = 20; y < 40; y++) {
-        data[0 + 40 * y] = 92; // left
-        data[39 + 40 * y] = 88; // right
+    for (let y = 0; y < b + offset; y++) {
+        data[0 + imgW * (imgH - 1 - y)] = 92; // left
+        data[imgW - 1 + imgW * (imgH - 1 - y)] = 88; // right
     }
-    for (let x = 0; x < 40; x++)
-        data[x + 40 * 39] = 88; // bottom
-    for (let x = 1; x < 39; x++) {
+    for (let x = 0; x < imgW; x++)
+        data[x + imgW * (imgH - 1)] = 88; // bottom
+    for (let x = 1; x < imgW - 1; x++) {
         let y = 0;
-        while (data[x + 40 * y] === 0) y++;
-        for (; data[x + 40 * (y - 1)] * data[(x - 1) + 40 * y] * data[(x + 1) + 40 * y] === 0; y++)
-            data[x + 40 * y] = 92; // top outline
+        while (data[x + imgW * y] === 0) y++;
+        for (; data[x + imgW * (y - 1)] * data[(x - 1) + imgW * y] * data[(x + 1) + imgW * y] === 0; y++)
+            data[x + imgW * y] = 92; // top outline
     }
-    data[0 + 40 * 20] = 21; // top left
-    data[0 + 40 * 39] = 89; // bottom left
-    data[39 + 40 * 39] = 87; // bottom right
-    data[39 + 40 * 20] = 89; // top right
+    data[0 + imgW * (imgH - b - offset)] = 21; // top left
+    data[0 + imgW * (imgH - 1)] = 89; // bottom left
+    data[(imgW - 1) + imgW * (imgH - 1)] = 87; // bottom right
+    data[(imgW - 1) + imgW * (imgH - b - offset)] = 89; // top right
 
     ui.imageManager.setPixelData(id, {
         type: "raw",
-        width: 40,
-        height: 40,
+        width: imgW,
+        height: imgH,
         data: data,
     });
 

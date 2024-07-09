@@ -6,8 +6,8 @@
  *****************************************************************************/
 
 import { button, checkbox, compute, dropdown, groupbox, horizontal, label, spinner, store, twoway, window } from "openrct2-flexui";
-import { DragMode } from './types';
-import { linear, createProfileImage, constant, gauss, circle, cubic, quadratic, invQuadratic, euclidean, supremum, manhattan, createShapeImage, unmodified, crater, mesa2, capped, mesa, toFun2D } from './profiles';
+import { DragMode, ProfileFun1D, ProfileModifier } from './types';
+import { linear, createProfileImage, constant, gauss, circle, cubic, quadratic, invQuadratic, euclidean, supremum, manhattan, createShapeImage, unmodified, crater, mesa2, capped, mesa, toFun2D, inverted } from './profiles';
 
 export const isActive = store(false);
 const selectedDragMode = store(1);
@@ -18,11 +18,19 @@ const brushLengthInput = store(8);
 const squareAspectRatio = store(true);
 export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
 
+const brushIsValley = store(false);
+
 const baseProfile = store(constant);
 export const brushNorm = store(euclidean);
 const profileModifier = store(unmodified);
 const profileParameter = store(50);
-export const profileFun = compute(baseProfile, brushNorm, profileModifier, profileParameter, (f, s, m, p) => toFun2D(f === constant ? f : m(f, p / 100), s));
+
+const apply = (profile: ProfileFun1D, isValley: boolean = false, modifier: ProfileModifier = unmodified, parameter: number = 0) => {
+    if (profile !== constant) profile = modifier(profile, parameter / 100);
+    return isValley ? inverted(profile) : profile;
+}
+
+export const profileFun = compute(baseProfile, compute(brushIsValley, dragMode, (v, d) => v && d !== "apply"), brushNorm, profileModifier, profileParameter, (f, v, s, m, p) => toFun2D(apply(f, v, m, p), s));
 
 const win = window({
     title: "WorldPainter",
@@ -111,20 +119,41 @@ const win = window({
                 }),
             ],
         }),
-        groupbox({
-            text: "Basic profile",
+        horizontal({
             content: [
-                horizontal({
-                    content: [constant, linear, quadratic, cubic, gauss, circle, invQuadratic].map(
-                        profile => button({
-                            width: 40,
-                            height: 40,
-                            image: createProfileImage(profile),
-                            onClick: () => baseProfile.set(profile),
-                            isPressed: compute(baseProfile, active => active === profile),
-                            tooltip: "hello",
+                groupbox({
+                    text: "Brush direction",
+                    content: [
+                        horizontal({
+                            content: [false, true].map(
+                                val => button({
+                                    width: 24,
+                                    height: 24,
+                                    image: 5147 - Number(val) * 2,
+                                    onClick: () => brushIsValley.set(val),
+                                    isPressed: compute(brushIsValley, active => active === val),
+                                    tooltip: "hello",
+                                }),
+                            ),
                         }),
-                    ),
+                    ],
+                }),
+                groupbox({
+                    text: "Basic profile",
+                    content: [
+                        horizontal({
+                            content: [constant, linear, quadratic, cubic, gauss, circle, invQuadratic].map(
+                                profile => button({
+                                    width: 40,
+                                    height: 24,
+                                    image: compute(brushIsValley, isValley => createProfileImage(apply(profile, isValley))),
+                                    onClick: () => baseProfile.set(profile),
+                                    isPressed: compute(baseProfile, active => active === profile),
+                                    tooltip: "hello",
+                                }),
+                            ),
+                        }),
+                    ],
                 }),
             ],
         }),
@@ -155,9 +184,9 @@ const win = window({
                             content: [unmodified, crater, mesa, mesa2, capped].map(
                                 modifier => button({
                                     width: 40,
-                                    height: 40,
+                                    height: 24,
                                     disabled: compute(baseProfile, active => active === constant),
-                                    image: compute(baseProfile, profileParameter, (profile, param) => createProfileImage(profile === constant ? constant : modifier(profile, param / 100))),
+                                    image: compute(baseProfile, brushIsValley, profileParameter, (profile, isValley, parameter) => createProfileImage(apply(profile, isValley, modifier, parameter))),
                                     onClick: () => profileModifier.set(modifier),
                                     isPressed: compute(profileModifier, active => active === modifier),
                                     tooltip: "hello",

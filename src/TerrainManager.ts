@@ -23,16 +23,18 @@ function add(a: Num4, b: Num4): Num4 {
     return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
 }
 
-function getSurface(x: number, y: number): SurfaceElement {
+function getSurface(x: number, y: number): SurfaceElement | undefined {
     const tile = map.getTile(x, y);
     for (const element of tile.elements)
         if (element.type === "surface")
             return element;
-    return undefined as never;
+    return undefined;
 }
 
 function getSurfaceZ(x: number, y: number): Num4 {
     const surface = getSurface(x, y);
+    if (!surface) return [0, 0, 0, 0];
+
     const baseHeight = surface.baseHeight;
     const slope = surface.slope;
 
@@ -45,6 +47,9 @@ function getSurfaceZ(x: number, y: number): Num4 {
 }
 
 function setSurfaceZ(x: number, y: number, fractional: Num4): void {
+    const surface = getSurface(x, y);
+    if (!surface) return;
+
     let integral = fractional.map(corner => Math.round(corner));
 
     // raise just below height of adjacent corners
@@ -66,7 +71,6 @@ function setSurfaceZ(x: number, y: number, fractional: Num4): void {
         return slope;
     }, 0);
 
-    const surface = getSurface(x, y);
     surface.baseHeight = height << 1;
     surface.clearanceHeight = height << 1;
     surface.slope = slope;

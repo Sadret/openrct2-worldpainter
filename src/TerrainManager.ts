@@ -1,4 +1,3 @@
-import { ProfileFun2D } from './types';
 /*****************************************************************************
  * Copyright (c) 2024 Sadret
  *
@@ -81,6 +80,11 @@ export function reset(): void {
 }
 
 export function apply(xMin: number, xMax: number, yMin: number, yMax: number, data: ProfileData): void {
+    xMin = Math.max(xMin, 1);
+    xMax = Math.min(xMax, map.size.x - 1);
+    yMin = Math.max(yMin, 1);
+    yMax = Math.min(yMax, map.size.y - 1);
+
     for (let x = xMin; x < xMax; x++)
         for (let y = yMin; y < yMax; y++) {
             delta.addZ(x, y, [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => data[x + dx][y + dy]) as Num4);
@@ -108,12 +112,9 @@ function getSurfaceZ(surface: SurfaceElement): Num4 {
 }
 
 function setSurfaceZ(surface: SurfaceElement, fractional: Num4): void {
-    // TODO: negative base height (lower rest)
-    // TODO: positive overflow
-    // TODO: don't touch map borders
     // TODO: symmetric behaviour
 
-    let integral = fractional.map(corner => Math.floor(corner));
+    let integral = fractional.map(corner => Math.round(corner));
 
     // raise just below height of adjacent corners
     integral = integral.map((_, corner) => Math.max(
@@ -124,8 +125,8 @@ function setSurfaceZ(surface: SurfaceElement, fractional: Num4): void {
     ));
 
     // subtract new height
-    const height = Math.min(...integral);
-    integral = integral.map(corner => corner - height);
+    const height = Math.max(Math.min(...integral, 0x7F), 1);
+    integral = integral.map(corner => Math.max(Math.min(corner, 0x7f) - height, 0));
 
     // calculate slope
     const slope = integral.reduce((slope, z, idx) => {

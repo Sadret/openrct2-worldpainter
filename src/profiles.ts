@@ -36,7 +36,10 @@ export const capped: ProfileModifier = (f, p) => { const fp = f(1 - p); return f
 // export const inverted: ProfileModifier = f => r => -f(r);
 
 export function createProfileImage(profile: ProfileFun1D): number {
-    const id = ui.imageManager.allocate(1)?.start || 0; // TODO: catch error
+    const range = ui.imageManager.allocate(1);
+    if (!range) return context.getIcon("empty");
+    const id = range.start;
+
     const data = new Uint8Array(40 * 40);
     for (let x = 0; x < 40; x++) {
         let z = (x < 4 || x >= 36) ? 0 : profile(Math.abs(31 / 32 + (4 - x) / 16));
@@ -62,10 +65,6 @@ export function createProfileImage(profile: ProfileFun1D): number {
     data[39 + 40 * 39] = 87; // bottom right
     data[39 + 40 * 20] = 89; // top right
 
-    // for (let x = 0; x < 40; x++)
-    //     if ((x & 3) === 1 || (x & 3) === 2)
-    //         data[x + 40 * 20] = 82; // ground level line
-
     ui.imageManager.setPixelData(id, {
         type: "raw",
         width: 40,
@@ -76,9 +75,6 @@ export function createProfileImage(profile: ProfileFun1D): number {
     return id;
 }
 
-
-
-// TODO: use colMap idea in createImage
 // msb to lsb: down, left, up, right
 const colMap = [
     90, // 0b0000
@@ -100,7 +96,10 @@ const colMap = [
 ];
 
 export function createShapeImage(shapeFun: typeof toEuclidean): number {
-    const id = ui.imageManager.allocate(1)?.start || 0; // TODO: catch error
+    const range = ui.imageManager.allocate(1);
+    if (!range) return context.getIcon("empty");
+    const id = range.start;
+
     const data = new Uint8Array(40 * 40);
     for (let x = 4; x < 36; x++)
         for (let y = 4; y < 36; y++)

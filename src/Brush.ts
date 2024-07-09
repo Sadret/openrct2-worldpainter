@@ -6,9 +6,7 @@
  *****************************************************************************/
 
 import { brushLength, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
-import type { ProfileFun2D } from "./types";
 import * as TerrainManager from "./TerrainManager";
-import { button } from 'openrct2-flexui';
 
 let down = false;
 let handle = 0;

@@ -149,12 +149,14 @@ const win = window({
                 }),
                 groupbox({
                     text: "Profile modifier",
+                    disabled: compute(baseProfile, active => active === constant),
                     content: [
                         horizontal({
                             content: [unmodified, crater, mesa, mesa2, capped].map(
                                 modifier => button({
                                     width: 40,
                                     height: 40,
+                                    disabled: compute(baseProfile, active => active === constant),
                                     image: compute(baseProfile, profileParameter, (profile, param) => createProfileImage(profile === constant ? constant : modifier(profile, param / 100))),
                                     onClick: () => profileModifier.set(modifier),
                                     isPressed: compute(profileModifier, active => active === modifier),
@@ -166,8 +168,10 @@ const win = window({
                             content: [
                                 label({
                                     text: "Parameter:",
+                                    disabled: compute(baseProfile, active => active === constant),
                                 }),
                                 spinner({
+                                    disabled: compute(baseProfile, active => active === constant),
                                     minimum: 0,
                                     maximum: 100,
                                     step: 5,

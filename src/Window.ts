@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 import { button, checkbox, compute, dropdown, groupbox, horizontal, label, spinner, store, twoway, window } from "openrct2-flexui";
-import { BrushMode, DragMode, ProfileFun1D, ProfileFun2D, ProfileModifier } from './types';
+import { DragMode, ProfileFun1D, ProfileFun2D, ProfileModifier } from './types';
 import { linear, createProfileImage, constant, gauss, circle, cubic, invCircle, quadratic, invQuadratic, toEuclidean, toSupremum, toManhattan, createShapeImage, unmodified, crater, mesa2, capped, mesa } from './profiles';
 
 export const isActive = store(false);
@@ -17,8 +17,6 @@ export const brushWidth = store(40);
 const brushLengthInput = store(8);
 const squareAspectRatio = store(true);
 export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
-const selectedBrushMode = store(1);
-export const brushMode = compute<number, BrushMode>(selectedBrushMode, i => (["absolute", "relative"] satisfies BrushMode[])[i]);
 
 const baseProfile = store<ProfileFun1D>(constant);
 const brushShape = store<(f: ProfileFun1D) => ProfileFun2D>(toEuclidean);
@@ -108,21 +106,6 @@ const win = window({
                             text: "1:1",
                             isChecked: twoway(squareAspectRatio),
                             width: "1w",
-                        }),
-                    ],
-                }),
-                horizontal({
-                    content: [
-                        label({
-                            text: "Brush mode:",
-                        }),
-                        dropdown({
-                            items: [
-                                "absolute",
-                                "relative",
-                            ],
-                            selectedIndex: twoway(selectedBrushMode),
-                            width: "2w",
                         }),
                     ],
                 }),

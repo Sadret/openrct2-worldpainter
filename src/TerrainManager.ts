@@ -5,16 +5,13 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-type Num4 = [number, number, number, number];
-function add(a: Num4, b: Num4): Num4 {
-    return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
-}
-
 export type ProfileData = {
     [key: number]: {
         [key: number]: number;
     };
 };
+
+type Num4 = [number, number, number, number];
 
 type ProfileCornerData = {
     [key: number]: {
@@ -22,74 +19,8 @@ type ProfileCornerData = {
     };
 };
 
-class Profile {
-    private readonly initialZ: (x: number, y: number) => Num4;
-    private profile: ProfileCornerData = {};
-
-    public constructor(initialZ: (x: number, y: number) => Num4) {
-        this.initialZ = initialZ;
-    }
-
-    public reset(): void {
-        this.profile = {};
-    }
-
-    public getZ(x: number, y: number): Num4 {
-        if (this.profile[x] && this.profile[x][y])
-            return this.profile[x][y];
-        const z = this.initialZ(x, y);
-        this.setZ(x, y, z);
-        return z;
-    }
-
-    public setZ(x: number, y: number, z: Num4): void {
-        if (!this.profile[x])
-            this.profile[x] = {};
-        this.profile[x][y] = z;
-    }
-
-    public addCornerZ(x: number, y: number, corner: number, z: number): void {
-        if (!this.profile[x])
-            this.profile[x] = {};
-        if (!this.profile[x][y])
-            this.profile[x][y] = [0, 0, 0, 0,];
-        this.profile[x][y][corner] += z;
-    }
-
-    public addZ(x: number, y: number, z: Num4): void {
-        if (!this.profile[x])
-            this.profile[x] = {};
-        if (!this.profile[x][y])
-            this.profile[x][y] = [0, 0, 0, 0,];
-        this.profile[x][y] = add(this.profile[x][y], z);
-    }
-
-    public forEach(callback: (x: number, y: number, z: Num4) => void): void {
-        for (const x in this.profile)
-            for (const y in this.profile[x])
-                callback(Number(x), Number(y), this.getZ(Number(x), Number(y)));
-    }
-}
-
-const initial: Profile = new Profile((x, y) => getSurfaceZ(getSurface(x, y)));
-const delta: Profile = new Profile(() => [0, 0, 0, 0]);
-
-export function reset(): void {
-    initial.reset();
-    delta.reset();
-}
-
-export function apply(xMin: number, xMax: number, yMin: number, yMax: number, data: ProfileData): void {
-    xMin = Math.max(xMin, 1);
-    xMax = Math.min(xMax, map.size.x - 1);
-    yMin = Math.max(yMin, 1);
-    yMax = Math.min(yMax, map.size.y - 1);
-
-    for (let x = xMin; x < xMax; x++)
-        for (let y = yMin; y < yMax; y++) {
-            delta.addZ(x, y, [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => data[x + dx][y + dy]) as Num4);
-            setSurfaceZ(getSurface(x, y), add(initial.getZ(x, y), delta.getZ(x, y)));
-        }
+function add(a: Num4, b: Num4): Num4 {
+    return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
 }
 
 function getSurface(x: number, y: number): SurfaceElement {
@@ -99,7 +30,9 @@ function getSurface(x: number, y: number): SurfaceElement {
             return element;
     return undefined as never;
 }
-function getSurfaceZ(surface: SurfaceElement): Num4 {
+
+function getSurfaceZ(x: number, y: number): Num4 {
+    const surface = getSurface(x, y);
     const baseHeight = surface.baseHeight;
     const slope = surface.slope;
 
@@ -111,9 +44,7 @@ function getSurfaceZ(surface: SurfaceElement): Num4 {
     ) as Num4;
 }
 
-function setSurfaceZ(surface: SurfaceElement, fractional: Num4): void {
-    // TODO: symmetric behaviour
-
+function setSurfaceZ(x: number, y: number, fractional: Num4): void {
     let integral = fractional.map(corner => Math.round(corner));
 
     // raise just below height of adjacent corners
@@ -135,7 +66,43 @@ function setSurfaceZ(surface: SurfaceElement, fractional: Num4): void {
         return slope;
     }, 0);
 
+    const surface = getSurface(x, y);
     surface.baseHeight = height << 1;
     surface.clearanceHeight = height << 1;
     surface.slope = slope;
+}
+
+let profile: ProfileCornerData = {};
+
+export function reset(): void {
+    profile = {};
+}
+
+function setZ(x: number, y: number, z: Num4): void {
+    if (!profile[x])
+        profile[x] = {};
+    profile[x][y] = z;
+    setSurfaceZ(x, y, z);
+}
+
+function getZ(x: number, y: number): Num4 {
+    if (profile[x] && profile[x][y])
+        return profile[x][y];
+    const z = getSurfaceZ(x, y);
+    setZ(x, y, z);
+    return z;
+}
+
+export function apply(xMin: number, xMax: number, yMin: number, yMax: number, data: ProfileData): void {
+    xMin = Math.max(xMin, 1);
+    xMax = Math.min(xMax, map.size.x - 1);
+    yMin = Math.max(yMin, 1);
+    yMax = Math.min(yMax, map.size.y - 1);
+
+    for (let x = xMin; x < xMax; x++)
+        for (let y = yMin; y < yMax; y++)
+            setZ(x, y, add(
+                getZ(x, y),
+                [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => data[x + dx][y + dy]) as Num4),
+            );
 }

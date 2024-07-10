@@ -37,9 +37,11 @@ const brush: ToolDesc = {
         if (dragMode.get() === "apply" && down) {
             const cursorCurrentVertical = e.screenCoords.y;
             const cursorVerticalDiff = cursorLastVertical - cursorCurrentVertical;
-            if (cursorVerticalDiff !== 0)
-                apply(cursorVerticalDiff * 2 ** (ui.mainViewport.zoom - 4));
-            cursorLastVertical = cursorCurrentVertical;
+            const delta = Math.round(cursorVerticalDiff * 2 ** (ui.mainViewport.zoom - 4));
+            if (delta !== 0) {
+                apply(delta);
+                cursorLastVertical = cursorCurrentVertical;
+            }
         }
         if (dragMode.get() === "move" || !down)
             if (e.mapCoords && e.mapCoords.x && e.mapCoords.y) {

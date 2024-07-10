@@ -82,10 +82,6 @@ function setSurfaceZ(x: number, y: number, fractional: Num4): void {
 
 let profile: ProfileCornerData = {};
 
-export function reset(): void {
-    profile = {};
-}
-
 function setZ(x: number, y: number, z: Num4): void {
     if (!profile[x])
         profile[x] = {};

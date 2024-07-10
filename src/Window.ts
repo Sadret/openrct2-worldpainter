@@ -50,7 +50,7 @@ export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRat
 
 const brushIsValley = store(false);
 
-const baseProfile = store(constant);
+const baseProfile = store(cubic3);
 export const brushNorm = store(euclidean);
 const profileModifier = store(unmodified);
 const profileParameter = store(50);

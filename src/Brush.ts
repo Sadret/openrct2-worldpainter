@@ -65,14 +65,12 @@ const brush: ToolDesc = {
             }
     },
     onUp: (e: ToolEventArgs) => {
-        TerrainManager.reset();
         down = false;
         context.clearInterval(handle);
     },
     onFinish: () => {
         ui.mainViewport.visibilityFlags &= ~(1 << 7);
         isActive.set(false);
-        TerrainManager.reset();
         down = false;
         context.clearInterval(handle);
     },

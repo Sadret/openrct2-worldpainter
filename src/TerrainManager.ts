@@ -75,9 +75,16 @@ function setSurfaceZ(x: number, y: number, fractional: Num4): void {
         return slope;
     }, 0);
 
-    surface.baseHeight = height << 1;
-    surface.clearanceHeight = height << 1;
-    surface.slope = slope;
+    const args: LandSetHeightArgs = {
+        x: x << 5,
+        y: y << 5,
+        height: height << 1,
+        style: slope,
+    };
+    // set new height and slope
+    context.queryAction("landsetheight", args,
+        result => result.error || context.executeAction("landsetheight", args)
+    );
 }
 
 let profile: ProfileCornerData = {};

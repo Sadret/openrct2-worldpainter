@@ -9,12 +9,15 @@ import { Norm, ProfileFun1D, ProfileModifier } from './types';
 
 export const constant: ProfileFun1D = () => 1;
 export const linear: ProfileFun1D = r => 1 - r;
-export const quadratic: ProfileFun1D = r => 1 - r ** 2;
-export const cubic: ProfileFun1D = r => 1 - 3 * r ** 2 + 2 * r ** 3;
 export const gauss: ProfileFun1D = r => 256 ** -(r ** 2);
 export const circle: ProfileFun1D = r => Math.sqrt(1 - r ** 2);
-export const invQuadratic: ProfileFun1D = r => (r - 1) ** 2;
-export const invCircle: ProfileFun1D = r => 1 - Math.sqrt(1 - (1 - r) ** 2); // ugly and does not really top out at 1
+
+const createCubic = (n: number, m: number) => (r: number) => 1 - n * r + (-3 + 2 * n + m) * r ** 2 + (2 - n - m) * r ** 3;
+export const cubic1: ProfileFun1D = createCubic(0, 2);
+export const cubic2: ProfileFun1D = createCubic(0, 1);
+export const cubic3: ProfileFun1D = createCubic(0, 0);
+export const cubic4: ProfileFun1D = createCubic(1, 0);
+export const cubic5: ProfileFun1D = createCubic(2, 0);
 
 export const toFun2D = (f: ProfileFun1D, norm: (x: number, y: number) => number) => (x: number, y: number) => f(Math.min(norm(x, y), 1));
 
@@ -23,10 +26,9 @@ export const euclidean: Norm = (x, y) => Math.sqrt(x ** 2 + y ** 2);
 export const manhattan: Norm = (x, y) => Math.abs(x) + Math.abs(y);
 
 export const unmodified: ProfileModifier = f => f;
+export const mesa1: ProfileModifier = (f, p) => p < 1 ? r => Math.min(f(r), (1 - p)) / (1 - p) : constant;
+export const mesa2: ProfileModifier = (f, p) => r => r <= p ? 1 : f((r - p) / (1 - p));
 export const crater: ProfileModifier = (f, p) => r => 1 - Math.abs(f(r) / (1 - p / 2) - 1);
-export const mesa: ProfileModifier = (f, p) => p < 1 ? r => Math.min(f(r), (1 - p)) / (1 - p) : constant;
-export const mesa2: ProfileModifier = (f, p) => r => r < p ? 1 : f((r - p) / (1 - p));
-export const capped: ProfileModifier = (f, p) => { const fp = f(1 - p); return fp < 1 ? r => (f(r * (1 - p)) - fp) / (1 - fp) : constant; };
 
 export const inverted = (f: ProfileFun1D) => (r: number) => -f(r);
 
@@ -36,6 +38,7 @@ export function createProfileImage(profile: ProfileFun1D): number {
     const id = range.start;
 
     const imgH = 24, b = 4, shpH = imgH - 2 * b, shpW = shpH * 2, imgW = shpW + 2 * b;
+    console.log(profile(0), profile(0.5), profile(1));
     const offset = (profile(1) + profile(0.5) >= 0) ? 0 : shpH;
 
     const data = new Uint8Array(imgW * imgH);

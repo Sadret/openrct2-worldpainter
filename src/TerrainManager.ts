@@ -24,10 +24,14 @@ function add(a: Num4, b: Num4): Num4 {
 }
 
 function getSurface(x: number, y: number): SurfaceElement | undefined {
+    if (x < 1 || x >= map.size.x - 1 || y < 1 || y >= map.size.y - 1)
+        return undefined;
+
     const tile = map.getTile(x, y);
     for (const element of tile.elements)
         if (element.type === "surface")
             return element;
+
     return undefined;
 }
 

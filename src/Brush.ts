@@ -10,7 +10,7 @@ import * as TerrainManager from "./TerrainManager";
 
 let down = false;
 let handle = 0;
-let center = { x: 0, y: 0 };
+let center: CoordsXY | undefined = undefined;
 let cursorLastVertical = 0;
 
 const brush: ToolDesc = {
@@ -59,6 +59,9 @@ const brush: ToolDesc = {
                             tiles.push({ x: x << 5, y: y << 5 });
 
                 ui.tileSelection.tiles = tiles;
+            } else {
+                center = undefined;
+                ui.tileSelection.tiles = [];
             }
     },
     onUp: (e: ToolEventArgs) => {
@@ -77,6 +80,8 @@ export function init(): void {
 }
 
 function apply(delta: number = 1): void {
+    if (!center) return;
+
     const dx = brushWidth.get(), dy = brushLength.get();
     const sx = Math.ceil((center.x >> 5) - dx / 2), sy = Math.ceil((center.y >> 5) - dy / 2);
     const cx = sx + dx / 2, cy = sy + dy / 2;

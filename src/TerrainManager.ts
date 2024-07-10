@@ -5,11 +5,7 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-export type ProfileData = {
-    [key: number]: {
-        [key: number]: number;
-    };
-};
+import { Profile } from "./types";
 
 type Num4 = [number, number, number, number];
 
@@ -87,7 +83,7 @@ function setSurfaceZ(x: number, y: number, fractional: Num4): void {
     );
 }
 
-let profile: ProfileCornerData = {};
+const profile: ProfileCornerData = {};
 
 function setZ(x: number, y: number, z: Num4): void {
     if (!profile[x])
@@ -104,9 +100,9 @@ function getZ(x: number, y: number): Num4 {
     return z;
 }
 
-export function apply(tiles: CoordsXY[], data: ProfileData): void {
+export function apply(tiles: CoordsXY[], profile: Profile): void {
     tiles.forEach(({ x, y }) => setZ(x, y, add(
         getZ(x, y),
-        [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => data[x + dx][y + dy]) as Num4),
+        [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => profile(x + dx, y + dy)) as Num4),
     ));
 }

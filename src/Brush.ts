@@ -5,13 +5,17 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { brushLength, brushNorm, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
+import { brushLength, brushNorm, brushRotation, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
 import * as TerrainManager from "./TerrainManager";
 
 let down = false;
 let handle = 0;
-let center: CoordsXY | undefined = undefined;
 let cursorLastVertical = 0;
+let data: {
+    cursor: CoordsXY,
+    transformation: ((x: number, y: number) => CoordsXY),
+    tiles: CoordsXY[],
+} | undefined = undefined;
 
 const brush: ToolDesc = {
     id: "worldpainter-brush",
@@ -45,24 +49,34 @@ const brush: ToolDesc = {
         }
         if (dragMode.get() === "move" || !down)
             if (e.mapCoords && e.mapCoords.x && e.mapCoords.y) {
-                center = e.mapCoords;
+                if (!data || data.cursor.x !== e.mapCoords.x || data.cursor.y !== e.mapCoords.y) {
+                    const dx = brushWidth.get(), dy = brushLength.get();
+                    const d = Math.max(dx, dy);
+                    const r = 0.75 * d; // > sqrt(2) * (d / 2)
 
-                const dx = brushWidth.get(), dy = brushLength.get();
-                const sx = Math.ceil((center.x >> 5) - dx / 2), sy = Math.ceil((center.y >> 5) - dy / 2);
-                const cx = sx + dx / 2, cy = sy + dy / 2;
-                const ex = sx + dx, ey = sy + dy;
+                    const center = { x: (e.mapCoords.x >> 5) + (1 - dx & 1) / 2, y: (e.mapCoords.y >> 5) + (1 - dy & 1) / 2 };
 
-                const norm = brushNorm.get();
-                const tiles: CoordsXY[] = [];
+                    const norm = brushNorm.get();
+                    const tiles: CoordsXY[] = [];
+                    const tf = getTransformation(center.x, center.y, brushRotation.get(), dx, dy);
 
-                for (let x = sx; x < ex; x++)
-                    for (let y = sy; y < ey; y++)
-                        if (norm((x + 0.5 - cx) / dx * 2, (y + 0.5 - cy) / dy * 2) <= 1)
-                            tiles.push({ x: x << 5, y: y << 5 });
+                    for (let x = Math.floor(center.x - r); x < center.x + r; x++)
+                        for (let y = Math.floor(center.y - r); y < center.y + r; y++) {
+                            const rel = tf(x, y);
+                            if (norm(rel.x, rel.y) <= 1)
+                                tiles.push({ x: x, y: y });
+                        }
 
-                ui.tileSelection.tiles = tiles;
+                    data = {
+                        cursor: e.mapCoords,
+                        transformation: tf,
+                        tiles: tiles,
+                    };
+
+                    ui.tileSelection.tiles = tiles.map(tile => ({ x: tile.x << 5, y: tile.y << 5 }));
+                }
             } else {
-                center = undefined;
+                data = undefined;
                 ui.tileSelection.tiles = [];
             }
     },
@@ -82,28 +96,42 @@ export function init(): void {
     isActive.subscribe(value => value ? ui.activateTool(brush) : (ui.tool && ui.tool.id === "worldpainter-brush" && ui.tool.cancel()));
 }
 
+function getTransformation(cx: number, cy: number, angle: number, dx: number, dy: number) {
+    const radians = angle * Math.PI / 180;
+    const sin = Math.sin(radians);
+    const cos = Math.cos(radians);
+
+    return (x: number, y: number) => {
+        x -= cx;
+        y -= cy;
+
+        return {
+            x: (x * cos - y * sin) / dx * 2,
+            y: (x * sin + y * cos) / dy * 2,
+        };
+    };
+}
+
 function apply(delta: number = 1): void {
-    if (!center) return;
+    if (!data) return;
 
-    const dx = brushWidth.get(), dy = brushLength.get();
-    const sx = Math.ceil((center.x >> 5) - dx / 2), sy = Math.ceil((center.y >> 5) - dy / 2);
-    const cx = sx + dx / 2, cy = sy + dy / 2;
-    const ex = sx + dx, ey = sy + dy;
-
-    const norm = brushNorm.get();
-    const tiles: CoordsXY[] = [];
-
+    const tf = data.transformation;
     const profileFunction = profileFun.get();
-    const profile: TerrainManager.ProfileData = {};
+    const profile: {
+        [key: number]: {
+            [key: number]: number;
+        };
+    } = {};
 
-    for (let x = sx; x <= ex; x++) {
-        profile[x] = {};
-        for (let y = sy; y <= ey; y++) {
-            profile[x][y] = profileFunction((x - cx) / dx * 2, (y - cy) / dy * 2) * delta;
-            if (norm((x + 0.5 - cx) / dx * 2, (y + 0.5 - cy) / dy * 2) <= 1)
-                tiles.push({ x: x, y: y });
+    function getZ(x: number, y: number): number {
+        if (!profile[x])
+            profile[x] = {};
+        if (!profile[x][y]) {
+            const rel = tf(x, y);
+            profile[x][y] = profileFunction(rel.x, rel.y) * delta;
         }
+        return profile[x][y];
     }
 
-    TerrainManager.apply(tiles, profile);
+    TerrainManager.apply(data.tiles, getZ);
 }

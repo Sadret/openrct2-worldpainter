@@ -47,6 +47,7 @@ export const brushWidth = store(40);
 const brushLengthInput = store(8);
 const squareAspectRatio = store(true);
 export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
+export const brushRotation = store(0);
 
 const brushIsValley = store(false);
 
@@ -146,6 +147,17 @@ const win = window({
                             width: "1w",
                         }),
                     ],
+                }),
+            ],
+        }),
+        horizontal({
+            content: [
+                label({
+                    text: "Brush rotation:",
+                }),
+                spinner({
+                    value: twoway(brushRotation),
+                    step: 5,
                 }),
             ],
         }),

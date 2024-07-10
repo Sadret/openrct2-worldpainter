@@ -38,7 +38,6 @@ export function createProfileImage(profile: ProfileFun1D): number {
     const id = range.start;
 
     const imgH = 24, b = 4, shpH = imgH - 2 * b, shpW = shpH * 2, imgW = shpW + 2 * b;
-    console.log(profile(0), profile(0.5), profile(1));
     const offset = (profile(1) + profile(0.5) >= 0) ? 0 : shpH;
 
     const data = new Uint8Array(imgW * imgH);

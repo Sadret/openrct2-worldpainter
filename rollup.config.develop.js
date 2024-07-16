@@ -6,7 +6,7 @@ export default {
 	input: "./src/main.ts",
 	output: {
 		format: "iife",
-		file: "./build/openrct2-worldpainter.js",
+		file: "./build/openrct2-worldpainter-develop.js",
 	},
 	plugins: [
 		resolve(),

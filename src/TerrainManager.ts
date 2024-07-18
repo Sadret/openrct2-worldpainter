@@ -5,9 +5,11 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { Profile } from "./types";
+import { ProfileFun2D } from "./types";
 
 type Num4 = [number, number, number, number];
+
+type ProfileCornerFun = (x: number, y: number) => Num4;
 
 type ProfileCornerData = {
     [key: number]: {
@@ -19,7 +21,7 @@ function add(a: Num4, b: Num4): Num4 {
     return [a[0] + b[0], a[1] + b[1], a[2] + b[2], a[3] + b[3]];
 }
 
-function getSurface(x: number, y: number): SurfaceElement | undefined {
+export function getSurface(x: number, y: number): SurfaceElement | undefined {
     if (x < 1 || x >= map.size.x - 1 || y < 1 || y >= map.size.y - 1)
         return undefined;
 
@@ -83,26 +85,58 @@ function setSurfaceZ(x: number, y: number, fractional: Num4): void {
     );
 }
 
-const profile: ProfileCornerData = {};
 
-function setZ(x: number, y: number, z: Num4): void {
-    if (!profile[x])
-        profile[x] = {};
-    profile[x][y] = z;
-    setSurfaceZ(x, y, z);
+class Profile {
+    private readonly initialZ: ProfileCornerFun;
+    public data: ProfileCornerData = {};
+
+    public constructor(initialZ: ProfileCornerFun) {
+        this.initialZ = initialZ;
+    }
+
+    public setZ(x: number, y: number, z: Num4): void {
+        if (!this.data[x])
+            this.data[x] = {};
+        this.data[x][y] = z;
+        // setSurfaceZ(x, y, z);
+    }
+
+    public getZ(x: number, y: number): Num4 {
+        if (this.data[x] && this.data[x][y])
+            return this.data[x][y];
+        const z = this.initialZ(x, y);
+        this.setZ(x, y, z);
+        return z;
+    }
+
+    public addZ(x: number, y: number, z: Num4): void {
+        this.setZ(x, y, add(this.getZ(x, y), z));
+    }
 }
 
-function getZ(x: number, y: number): Num4 {
-    if (profile[x] && profile[x][y])
-        return profile[x][y];
-    const z = getSurfaceZ(x, y);
-    setZ(x, y, z);
-    return z;
+const surfaceProfile = new Profile((x, y) => getSurfaceZ(x, y));
+const deltaProfile = new Profile(() => [0, 0, 0, 0]);
+
+export function apply(tiles: CoordsXY[], profile: ProfileFun2D, profileStrategy: ProfileFun2D): void {
+    tiles.forEach(({ x, y }) => {
+        deltaProfile.addZ(x, y, [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => profile(x + dx, y + dy)) as Num4);
+        const surface = surfaceProfile.getZ(x, y);
+        const delta = deltaProfile.getZ(x, y);
+        const newProfile = surface.map((corner, idx) => profileStrategy(corner, delta[idx])) as Num4;
+        setSurfaceZ(x, y, newProfile);
+    });
 }
 
-export function apply(tiles: CoordsXY[], profile: Profile): void {
-    tiles.forEach(({ x, y }) => setZ(x, y, add(
-        getZ(x, y),
-        [[1, 1], [1, 0], [0, 0], [0, 1]].map(([dx, dy]) => profile(x + dx, y + dy)) as Num4),
-    ));
+export function finalise(profileStrategy: ProfileFun2D): void {
+    for (const x in deltaProfile.data) {
+        const xn = Number(x);
+        for (const y in deltaProfile.data[x]) {
+            const yn = Number(y);
+            const surface = surfaceProfile.getZ(xn, yn);
+            const delta = deltaProfile.getZ(xn, yn);
+            const newProfile = surface.map((corner, idx) => profileStrategy(corner, delta[idx])) as Num4;
+            surfaceProfile.setZ(xn, yn, newProfile);
+        }
+    }
+    deltaProfile.data = {};
 }

@@ -5,16 +5,21 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { brushLength, brushNorm, brushRotation, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
+import { applyMode, brushLength, brushNorm, brushRotation, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
 import * as TerrainManager from "./TerrainManager";
 
+const relative = (a: number, b: number) => a + b;
+const absolute = (minZ: number, maxZ: number) => (a: number, b: number) => b < 0 ? Math.min(a, maxZ + b) : Math.max(a, minZ + b);
+
 let down = false;
-let handle = 0;
+let handle: number | undefined = undefined;
 let cursorLastVertical = 0;
 let data: {
     cursor: CoordsXY,
     transformation: ((x: number, y: number) => CoordsXY),
     tiles: CoordsXY[],
+    minZ: number,
+    maxZ: number,
 } | undefined = undefined;
 
 const brush: ToolDesc = {
@@ -41,10 +46,11 @@ const brush: ToolDesc = {
         if (dragMode.get() === "apply" && down) {
             const cursorCurrentVertical = e.screenCoords.y;
             const cursorVerticalDiff = cursorLastVertical - cursorCurrentVertical;
-            const delta = Math.round(cursorVerticalDiff * 2 ** (ui.mainViewport.zoom - 4));
+            const pixelPerStep = 1 << (4 - ui.mainViewport.zoom);
+            const delta = Math.round(cursorVerticalDiff / pixelPerStep);
             if (delta !== 0) {
                 apply(delta);
-                cursorLastVertical = cursorCurrentVertical;
+                cursorLastVertical -= delta * pixelPerStep;
             }
         }
         if (dragMode.get() === "move" || !down)
@@ -59,18 +65,29 @@ const brush: ToolDesc = {
                     const norm = brushNorm.get();
                     const tiles: CoordsXY[] = [];
                     const tf = getTransformation(center.x, center.y, brushRotation.get(), dx, dy);
+                    let minZ = 255;
+                    let maxZ = 0;
 
                     for (let x = Math.floor(center.x - r); x < center.x + r; x++)
                         for (let y = Math.floor(center.y - r); y < center.y + r; y++) {
                             const rel = tf(x, y);
-                            if (norm(rel.x, rel.y) <= 1)
+                            if (norm(rel.x, rel.y) <= 1) {
                                 tiles.push({ x: x, y: y });
+                                let surfaceZ = TerrainManager.getSurface(x, y)?.baseHeight;
+                                if (surfaceZ) {
+                                    surfaceZ >>= 1;
+                                    minZ = Math.min(minZ, surfaceZ);
+                                    maxZ = Math.max(maxZ, surfaceZ);
+                                }
+                            }
                         }
 
                     data = {
                         cursor: e.mapCoords,
                         transformation: tf,
                         tiles: tiles,
+                        minZ: minZ,
+                        maxZ: maxZ,
                     };
 
                     ui.tileSelection.tiles = tiles.map(tile => ({ x: tile.x << 5, y: tile.y << 5 }));
@@ -82,13 +99,21 @@ const brush: ToolDesc = {
     },
     onUp: (e: ToolEventArgs) => {
         down = false;
-        context.clearInterval(handle);
+        TerrainManager.finalise(applyMode.get() === "relative" ? relative : absolute(data?.minZ || 255, data?.maxZ || 0));
+        if (handle !== undefined) {
+            context.clearInterval(handle);
+            handle = undefined;
+        }
     },
     onFinish: () => {
         ui.mainViewport.visibilityFlags &= ~(1 << 7);
         isActive.set(false);
         down = false;
-        context.clearInterval(handle);
+        TerrainManager.finalise(applyMode.get() === "relative" ? relative : absolute(data?.minZ || 255, data?.maxZ || 0));
+        if (handle !== undefined) {
+            context.clearInterval(handle);
+            handle = undefined;
+        }
     },
 };
 
@@ -133,5 +158,5 @@ function apply(delta: number = 1): void {
         return profile[x][y];
     }
 
-    TerrainManager.apply(data.tiles, getZ);
+    TerrainManager.apply(data.tiles, getZ, applyMode.get() === "relative" ? relative : absolute(data.minZ, data.maxZ));
 }

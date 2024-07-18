@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 import { button, checkbox, compute, dropdown, groupbox, horizontal, label, spinner, store, twoway, window } from "openrct2-flexui";
-import { DragMode, ProfileFun1D, ProfileModifier } from './types';
+import { ApplyMode, DragMode, ProfileFun1D, ProfileFun2D, ProfileModifier } from './types';
 import { linear, createProfileImage, constant, gauss, circle, euclidean, supremum, manhattan, createShapeImage, unmodified, crater, mesa1, mesa2, toFun2D, inverted, cubic3, cubic1, cubic4, cubic2, cubic5 } from './profiles';
 
 function tooltipOf(obj: any): string {
@@ -43,6 +43,8 @@ export const isActive = store(false);
 const selectedDragMode = store(1);
 export const dragMode = compute<number, DragMode>(selectedDragMode, i => (["none", "apply", "move"] satisfies DragMode[])[i]);
 export const sensitivity = store(3);
+const selectedApplyMode = store(0);
+export const applyMode = compute<number, ApplyMode>(selectedApplyMode, i => (["relative", "absolute"] satisfies ApplyMode[])[i]);
 export const brushWidth = store(40);
 const brushLengthInput = store(8);
 const squareAspectRatio = store(true);
@@ -83,6 +85,21 @@ const win = window({
                                 "click to apply, drag to move",
                             ],
                             selectedIndex: twoway(selectedDragMode),
+                            width: "2w",
+                        }),
+                    ],
+                }),
+                horizontal({
+                    content: [
+                        label({
+                            text: "Apply mode:",
+                        }),
+                        dropdown({
+                            items: [
+                                "relative / additive",
+                                "absolute / maximum",
+                            ],
+                            selectedIndex: twoway(selectedApplyMode),
                             width: "2w",
                         }),
                     ],

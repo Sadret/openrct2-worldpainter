@@ -19,3 +19,5 @@ export type ProfileModifier = (f: ProfileFun1D, p: number) => ProfileFun1D;
 export type Norm = (x: number, y: number) => number;
 
 export type DragMode = "none" | "apply" | "move";
+
+export type ApplyMode = "relative" | "absolute";

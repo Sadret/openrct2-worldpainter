@@ -8,7 +8,7 @@
 /// <reference path="../../openrct2.d.ts" />
 
 import * as Window from "./Window";
-import * as Brush from "./Brush";
+import * as TerrainTool from "./TerrainTool";
 
 registerPlugin({
     name: "worldpainter",
@@ -19,8 +19,8 @@ registerPlugin({
     minApiVersion: 80,
     targetApiVersion: 80,
     main: () => {
-        Brush.init();
-        ui.registerMenuItem("WorldPainter", Window.open);
+        TerrainTool.init();
         Window.open();
+        ui.registerMenuItem("WorldPainter", Window.open);
     },
 });

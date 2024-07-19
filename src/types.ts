@@ -18,6 +18,7 @@ export type ProfileModifier = (f: ProfileFun1D, p: number) => ProfileFun1D;
 
 export type Norm = (x: number, y: number) => number;
 
-export type DragMode = "none" | "apply" | "move";
+export type ToolMode = "sculpt" | "brush";
+export type ToolShape = "square" | "circle" | "diamond";
 
-export type ApplyMode = "relative" | "absolute";
+export type SculptMode = "relative" | "absolute";

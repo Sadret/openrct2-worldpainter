@@ -5,15 +5,26 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { button, checkbox, compute, dropdown, groupbox, horizontal, label, spinner, store, twoway, window } from "openrct2-flexui";
-import { ApplyMode, DragMode, ProfileFun1D, ProfileFun2D, ProfileModifier } from './types';
+import { button, compute, graphics, groupbox, horizontal, label, spinner, store, twoway, vertical, window } from "openrct2-flexui";
+import { SculptMode, ToolMode, ProfileFun1D, ProfileModifier, ToolShape, Norm } from './types';
 import { linear, createProfileImage, constant, gauss, circle, euclidean, supremum, manhattan, createShapeImage, unmodified, crater, mesa1, mesa2, toFun2D, inverted, cubic3, cubic1, cubic4, cubic2, cubic5 } from './profiles';
+import { imageOf } from "./images";
 
 function tooltipOf(obj: any): string {
     switch (obj) {
         // isValley
         case false: return "Raise";
         case true: return "Lower";
+        // tool mode
+        case "brush": return "Brush";
+        case "sculpt": return "Sculpt";
+        // tool shape
+        case "square": return "Square";
+        case "circle": return "Circle";
+        case "diamond": return "Diamond";
+        // tool type
+        case "absolute": return "Absolute";
+        case "relative": return "Relative";
         // basic shapes
         case constant: return "Flat";
         case linear: return "Cone";
@@ -25,11 +36,7 @@ function tooltipOf(obj: any): string {
         case cubic3: return "Cubic 3"; // bell
         case cubic4: return "Cubic 4"; // peak
         case cubic5: return "Cubic 5"; // peak
-        // brushNorm
-        case supremum: return "Square";
-        case euclidean: return "Circle";
-        case manhattan: return "Diamond";
-        // brushModifer
+        // toolModifer
         case unmodified: return "Unmodified";
         case mesa1: return "Mesa 1";
         case mesa2: return "Mesa 2";
@@ -39,22 +46,41 @@ function tooltipOf(obj: any): string {
     };
 }
 
+function normOf(shape: ToolShape): Norm {
+    switch (shape) {
+        case "square": return supremum;
+        case "circle": return euclidean;
+        case "diamond": return manhattan;
+    }
+}
+
+function graphicsOf(name: Parameters<typeof imageOf>[0]) {
+    const image = imageOf(name);
+    return graphics({
+        ...image,
+        onDraw: g => g.image(image.image, 0, 0),
+    });
+}
+
+const toolModes: ToolMode[] = ["brush", "sculpt"];
+const toolShapes: ToolShape[] = ["square", "circle", "diamond"];
+const applyModes: SculptMode[] = ["relative", "absolute"];
+
 export const isActive = store(false);
-const selectedDragMode = store(1);
-export const dragMode = compute<number, DragMode>(selectedDragMode, i => (["none", "apply", "move"] satisfies DragMode[])[i]);
+export const toolMode = store("sculpt");
 export const sensitivity = store(3);
-const selectedApplyMode = store(0);
-export const applyMode = compute<number, ApplyMode>(selectedApplyMode, i => (["relative", "absolute"] satisfies ApplyMode[])[i]);
-export const brushWidth = store(40);
-const brushLengthInput = store(8);
+export const applyMode = store("relative");
+export const toolWidth = store(40);
+const toolLengthInput = store(8);
 const squareAspectRatio = store(true);
-export const brushLength = compute(brushWidth, brushLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
-export const brushRotation = store(0);
+export const toolLength = compute(toolWidth, toolLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
+export const toolRotation = store(0);
 
 const brushIsValley = store(false);
 
 const baseProfile = store(cubic3);
-export const brushNorm = store(euclidean);
+const toolShape = store<ToolShape>("circle");
+export const toolNorm = compute(toolShape, normOf);
 const profileModifier = store(unmodified);
 const profileParameter = store(50);
 
@@ -63,46 +89,86 @@ const apply = (profile: ProfileFun1D, isValley: boolean = false, modifier: Profi
     return isValley ? inverted(profile) : profile;
 }
 
-export const profileFun = compute(baseProfile, compute(brushIsValley, dragMode, (v, d) => v && d !== "apply"), brushNorm, profileModifier, profileParameter, (f, v, s, m, p) => toFun2D(apply(f, v, m, p), s));
+export const profileFun = compute(baseProfile, compute(brushIsValley, toolMode, (v, d) => v && d !== "sculpt"), toolNorm, profileModifier, profileParameter, (f, v, s, m, p) => toFun2D(apply(f, v, m, p), s));
 
 const win = window({
     title: "WorldPainter",
-    width: 384,
+    width: 258,
     height: "auto",
     content: [
         groupbox({
-            text: "General settings",
+            text: "Tool shape",
+            content: [
+                horizontal({
+                    width: "100%",
+                    spacing: "1w",
+                    content: toolShapes.map(
+                        shape => button({
+                            ...imageOf(shape),
+                            onClick: () => toolShape.set(shape),
+                            isPressed: compute(toolShape, active => active === shape),
+                            tooltip: tooltipOf(shape),
+                        }),
+                    ),
+                }),
+            ],
+        }),
+        groupbox({
+            text: "Tool size and rotation",
             content: [
                 horizontal({
                     content: [
-                        label({
-                            text: "Drag mode:",
+                        graphicsOf("size"),
+                        spinner({
+                            minimum: 2,
+                            value: twoway(toolWidth),
                         }),
-                        dropdown({
-                            items: [
-                                "click to apply",
-                                "click and drag to apply",
-                                "click to apply, drag to move",
-                            ],
-                            selectedIndex: twoway(selectedDragMode),
-                            width: "2w",
+                        button({
+                            image: 29440,
+                            onClick: () => squareAspectRatio.set(!squareAspectRatio.get()),
+                            isPressed: squareAspectRatio,
+                            height: 14,
+                            width: 20,
+                        }),
+                        spinner({
+                            minimum: 2,
+                            value: twoway(toolLengthInput),
+                            disabled: squareAspectRatio,
+                        }),
+                        graphicsOf("rotation"),
+                        spinner({
+                            value: twoway(toolRotation),
+                            step: 5,
+                            format: v => `${v}°`,
                         }),
                     ],
                 }),
+            ],
+        }),
+        groupbox({
+            text: "Tool type",
+            width: "100%",
+            content: [
                 horizontal({
-                    content: [
-                        label({
-                            text: "Apply mode:",
-                        }),
-                        dropdown({
-                            items: [
-                                "relative / additive",
-                                "absolute / maximum",
-                            ],
-                            selectedIndex: twoway(selectedApplyMode),
-                            width: "2w",
-                        }),
-                    ],
+                    content: toolModes.map(mode => button({
+                        ...imageOf(mode),
+                        tooltip: tooltipOf(mode),
+                        onClick: () => toolMode.set(mode),
+                        isPressed: compute(toolMode, val => val === mode),
+                    })),
+                }),
+            ],
+        }),
+        groupbox({
+            text: "Tool settings: TODO",
+            content: [
+                horizontal({
+                    content: applyModes.map(mode => button({
+                        ...imageOf(mode),
+                        tooltip: tooltipOf(mode),
+                        onClick: () => applyMode.set(mode),
+                        isPressed: compute(applyMode, val => val === mode),
+                    })),
                 }),
                 horizontal({
                     content: [
@@ -113,174 +179,82 @@ const win = window({
                             minimum: 0,
                             maximum: 10,
                             value: twoway(sensitivity),
-                            width: "2w",
                         }),
+                        ...[false, true].map(
+                            val => button({
+                                width: 24,
+                                height: 24,
+                                image: 5147 - Number(val) * 2,
+                                onClick: () => brushIsValley.set(val),
+                                isPressed: compute(brushIsValley, active => active === val),
+                                tooltip: tooltipOf(val),
+                            }),
+                        ),
                     ],
                 }),
             ],
         }),
         groupbox({
-            text: "Brush settings",
+            text: "Mountain shape",
             content: [
                 horizontal({
-                    content: [
-                        label({
-                            text: "Width:",
-                            width: "2w",
+                    content: [constant, linear, gauss, circle].map(
+                        profile => button({
+                            width: 44,
+                            height: 24,
+                            image: compute(brushIsValley, isValley => createProfileImage(apply(profile, isValley))),
+                            onClick: () => baseProfile.set(profile),
+                            isPressed: compute(baseProfile, active => active === profile),
+                            tooltip: tooltipOf(profile),
                         }),
-                        spinner({
-                            minimum: 2,
-                            value: twoway(brushWidth),
-                            width: "2w",
+                    ),
+                }),
+                horizontal({
+                    content: [cubic1, cubic2, cubic3, cubic4, cubic5].map(
+                        profile => button({
+                            width: 44,
+                            height: 24,
+                            image: compute(brushIsValley, isValley => createProfileImage(apply(profile, isValley))),
+                            onClick: () => baseProfile.set(profile),
+                            isPressed: compute(baseProfile, active => active === profile),
+                            tooltip: tooltipOf(profile),
                         }),
-                        label({ text: "", width: "0.5w", }),
-                        button({
-                            text: "<->",
-                            onClick: () => {
-                                const width = brushWidth.get();
-                                brushWidth.set(brushLengthInput.get());
-                                brushLengthInput.set(width);
-                            },
-                            height: 14,
-                            width: "1w",
-                            disabled: squareAspectRatio,
-                        }),
-                        label({ text: "", width: "0.5w", }),
-                        label({
-                            text: "Length:",
-                            disabled: squareAspectRatio,
-                            width: "2w",
-                        }),
-                        spinner({
-                            minimum: 2,
-                            value: twoway(brushLengthInput),
-                            width: "2w",
-                            disabled: squareAspectRatio,
-                        }),
-                        label({ text: "", width: "0.5w", }),
-                        checkbox({
-                            text: "1:1",
-                            isChecked: twoway(squareAspectRatio),
-                            width: "1w",
-                        }),
-                    ],
+                    ),
                 }),
             ],
         }),
-        horizontal({
+        groupbox({
+            text: "Shape modifications",
+            disabled: compute(baseProfile, active => active === constant),
             content: [
-                label({
-                    text: "Brush rotation:",
-                }),
-                spinner({
-                    value: twoway(brushRotation),
-                    step: 5,
-                }),
-            ],
-        }),
-        horizontal({
-            content: [
-                groupbox({
-                    text: "Brush direction",
-                    content: [
-                        horizontal({
-                            content: [false, true].map(
-                                val => button({
-                                    width: 24,
-                                    height: 24,
-                                    image: 5147 - Number(val) * 2,
-                                    onClick: () => brushIsValley.set(val),
-                                    isPressed: compute(brushIsValley, active => active === val),
-                                    tooltip: tooltipOf(val),
-                                }),
-                            ),
+                horizontal({
+                    content: [mesa1, mesa2, crater].map(
+                        modifier => button({
+                            width: 44,
+                            height: 24,
+                            disabled: compute(baseProfile, active => active === constant),
+                            image: compute(baseProfile, brushIsValley, profileParameter, (profile, isValley, parameter) => createProfileImage(apply(profile, isValley, modifier, parameter))),
+                            onClick: () => profileModifier.set(profileModifier.get() === modifier ? unmodified : modifier),
+                            isPressed: compute(profileModifier, active => active === modifier),
+                            tooltip: tooltipOf(modifier),
                         }),
-                    ],
-                }),
-                groupbox({
-                    text: "Basic profile",
-                    content: [
-                        horizontal({
-                            content: [constant, linear, gauss, circle].map(
-                                profile => button({
-                                    width: 40,
-                                    height: 24,
-                                    image: compute(brushIsValley, isValley => createProfileImage(apply(profile, isValley))),
-                                    onClick: () => baseProfile.set(profile),
-                                    isPressed: compute(baseProfile, active => active === profile),
-                                    tooltip: tooltipOf(profile),
-                                }),
-                            ),
-                        }),
-                        horizontal({
-                            content: [cubic1, cubic2, cubic3, cubic4, cubic5].map(
-                                profile => button({
-                                    width: 40,
-                                    height: 24,
-                                    image: compute(brushIsValley, isValley => createProfileImage(apply(profile, isValley))),
-                                    onClick: () => baseProfile.set(profile),
-                                    isPressed: compute(baseProfile, active => active === profile),
-                                    tooltip: tooltipOf(profile),
-                                }),
-                            ),
-                        }),
-                    ],
-                }),
-            ],
-        }),
-        horizontal({
-            content: [
-                groupbox({
-                    text: "Brush shape",
-                    content: [
-                        horizontal({
-                            content: [supremum, euclidean, manhattan].map(
-                                shape => button({
-                                    width: 40,
-                                    height: 40,
-                                    image: createShapeImage(shape),
-                                    onClick: () => brushNorm.set(shape),
-                                    isPressed: compute(brushNorm, active => active === shape),
-                                    tooltip: tooltipOf(shape),
-                                }),
-                            ),
-                        }),
-                    ],
-                }),
-                groupbox({
-                    text: "Profile modifier",
-                    disabled: compute(baseProfile, active => active === constant),
-                    content: [
-                        horizontal({
-                            content: [unmodified, mesa1, mesa2, crater].map(
-                                modifier => button({
-                                    width: 40,
-                                    height: 24,
-                                    disabled: compute(baseProfile, active => active === constant),
-                                    image: compute(baseProfile, brushIsValley, profileParameter, (profile, isValley, parameter) => createProfileImage(apply(profile, isValley, modifier, parameter))),
-                                    onClick: () => profileModifier.set(modifier),
-                                    isPressed: compute(profileModifier, active => active === modifier),
-                                    tooltip: tooltipOf(modifier),
-                                }),
-                            ),
-                        }),
-                        horizontal({
+                    ).concat(
+                        vertical({
+                            height: 24,
+                            padding: { left: "0.25w", },
                             content: [
-                                label({
-                                    text: "Parameter:",
-                                    disabled: compute(baseProfile, active => active === constant),
-                                }),
                                 spinner({
+                                    padding: ["1w", 0],
                                     disabled: compute(baseProfile, active => active === constant),
                                     minimum: 0,
                                     maximum: 100,
                                     step: 5,
-                                    format: to2Decimals,
+                                    format: v => `${v}%`,
                                     value: twoway(profileParameter),
                                 }),
                             ],
                         }),
-                    ],
+                    ),
                 }),
             ],
         }),
@@ -296,11 +270,4 @@ export function open(): void {
 
 export function close(): void {
     win.close();
-}
-
-function to2Decimals(value: number): string {
-    let str = String(value / 100);
-    if (str.length < 2) str += ".";
-    while (str.length < 4) str += "0";
-    return str;
 }

@@ -37,7 +37,7 @@ export function createProfileImage(profile: ProfileFun1D): number {
     if (!range) return context.getIcon("empty");
     const id = range.start;
 
-    const imgH = 24, b = 4, shpH = imgH - 2 * b, shpW = shpH * 2, imgW = shpW + 2 * b;
+    const imgH = 20, imgW = imgH * 2, b = 4, shpH = imgH - b, shpW = shpH * 2;
     const offset = (profile(1) + profile(0.5) >= 0) ? 0 : shpH;
 
     const data = new Uint8Array(imgW * imgH);
@@ -65,11 +65,16 @@ export function createProfileImage(profile: ProfileFun1D): number {
     data[(imgW - 1) + imgW * (imgH - 1)] = 87; // bottom right
     data[(imgW - 1) + imgW * (imgH - b - offset)] = 89; // top right
 
+    const p = 2, data2 = new Uint8Array((imgW + 2 * p) * (imgH + 2 * p));
+    for (let x = 0; x < imgW; x++)
+        for (let y = 0; y < imgH; y++)
+            data2[x + p + (imgW + 2 * p) * (y + p)] = data[x + imgW * y];
+
     ui.imageManager.setPixelData(id, {
         type: "raw",
-        width: imgW,
-        height: imgH,
-        data: data,
+        width: imgW + 2 * p,
+        height: imgH + 2 * p,
+        data: data2,
     });
 
     return id;

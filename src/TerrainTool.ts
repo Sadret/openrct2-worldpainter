@@ -5,7 +5,7 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { applyMode, brushLength, brushNorm, brushRotation, brushWidth, dragMode, isActive, profileFun, sensitivity } from './Window';
+import { applyMode, toolLength, toolNorm, toolRotation, toolWidth, toolMode, isActive, profileFun, sensitivity } from './Window';
 import * as TerrainManager from "./TerrainManager";
 
 const relative = (a: number, b: number) => a + b;
@@ -22,8 +22,8 @@ let data: {
     maxZ: number,
 } | undefined = undefined;
 
-const brush: ToolDesc = {
-    id: "worldpainter-brush",
+const tool: ToolDesc = {
+    id: "worldpainter-tool",
     cursor: "dig_down",
     filter: ["terrain", "water"],
 
@@ -33,7 +33,7 @@ const brush: ToolDesc = {
     },
     onDown: (e: ToolEventArgs) => {
         down = true;
-        if (dragMode.get() === "apply")
+        if (toolMode.get() === "sculpt")
             cursorLastVertical = e.screenCoords.y;
         else {
             const msDelay = 1 << (10 - Math.min(5, sensitivity.get()));
@@ -43,7 +43,7 @@ const brush: ToolDesc = {
         }
     },
     onMove: (e: ToolEventArgs) => {
-        if (dragMode.get() === "apply" && down) {
+        if (toolMode.get() === "sculpt" && down) {
             const cursorCurrentVertical = e.screenCoords.y;
             const cursorVerticalDiff = cursorLastVertical - cursorCurrentVertical;
             const pixelPerStep = 1 << (4 - ui.mainViewport.zoom);
@@ -52,50 +52,48 @@ const brush: ToolDesc = {
                 apply(delta);
                 cursorLastVertical -= delta * pixelPerStep;
             }
-        }
-        if (dragMode.get() === "move" || !down)
-            if (e.mapCoords && e.mapCoords.x && e.mapCoords.y) {
-                if (!data || data.cursor.x !== e.mapCoords.x || data.cursor.y !== e.mapCoords.y) {
-                    const dx = brushWidth.get(), dy = brushLength.get();
-                    const d = Math.max(dx, dy);
-                    const r = 0.75 * d; // > sqrt(2) * (d / 2)
+        } else if (e.mapCoords && e.mapCoords.x && e.mapCoords.y) {
+            if (!data || data.cursor.x !== e.mapCoords.x || data.cursor.y !== e.mapCoords.y) {
+                const dx = toolWidth.get(), dy = toolLength.get();
+                const d = Math.max(dx, dy);
+                const r = 0.75 * d; // > sqrt(2) * (d / 2)
 
-                    const center = { x: (e.mapCoords.x >> 5) + (1 - dx & 1) / 2, y: (e.mapCoords.y >> 5) + (1 - dy & 1) / 2 };
+                const center = { x: (e.mapCoords.x >> 5) + (1 - dx & 1) / 2, y: (e.mapCoords.y >> 5) + (1 - dy & 1) / 2 };
 
-                    const norm = brushNorm.get();
-                    const tiles: CoordsXY[] = [];
-                    const tf = getTransformation(center.x, center.y, brushRotation.get(), dx, dy);
-                    let minZ = 255;
-                    let maxZ = 0;
+                const norm = toolNorm.get();
+                const tiles: CoordsXY[] = [];
+                const tf = getTransformation(center.x, center.y, toolRotation.get(), dx, dy);
+                let minZ = 255;
+                let maxZ = 0;
 
-                    for (let x = Math.floor(center.x - r); x < center.x + r; x++)
-                        for (let y = Math.floor(center.y - r); y < center.y + r; y++) {
-                            const rel = tf(x, y);
-                            if (norm(rel.x, rel.y) <= 1) {
-                                tiles.push({ x: x, y: y });
-                                let surfaceZ = TerrainManager.getSurface(x, y)?.baseHeight;
-                                if (surfaceZ) {
-                                    surfaceZ >>= 1;
-                                    minZ = Math.min(minZ, surfaceZ);
-                                    maxZ = Math.max(maxZ, surfaceZ);
-                                }
+                for (let x = Math.floor(center.x - r); x < center.x + r; x++)
+                    for (let y = Math.floor(center.y - r); y < center.y + r; y++) {
+                        const rel = tf(x, y);
+                        if (norm(rel.x, rel.y) <= 1) {
+                            tiles.push({ x: x, y: y });
+                            let surfaceZ = TerrainManager.getSurface(x, y)?.baseHeight;
+                            if (surfaceZ) {
+                                surfaceZ >>= 1;
+                                minZ = Math.min(minZ, surfaceZ);
+                                maxZ = Math.max(maxZ, surfaceZ);
                             }
                         }
+                    }
 
-                    data = {
-                        cursor: e.mapCoords,
-                        transformation: tf,
-                        tiles: tiles,
-                        minZ: minZ,
-                        maxZ: maxZ,
-                    };
+                data = {
+                    cursor: e.mapCoords,
+                    transformation: tf,
+                    tiles: tiles,
+                    minZ: minZ,
+                    maxZ: maxZ,
+                };
 
-                    ui.tileSelection.tiles = tiles.map(tile => ({ x: tile.x << 5, y: tile.y << 5 }));
-                }
-            } else {
-                data = undefined;
-                ui.tileSelection.tiles = [];
+                ui.tileSelection.tiles = tiles.map(tile => ({ x: tile.x << 5, y: tile.y << 5 }));
             }
+        } else {
+            data = undefined;
+            ui.tileSelection.tiles = [];
+        }
     },
     onUp: (e: ToolEventArgs) => {
         down = false;
@@ -118,7 +116,7 @@ const brush: ToolDesc = {
 };
 
 export function init(): void {
-    isActive.subscribe(value => value ? ui.activateTool(brush) : (ui.tool && ui.tool.id === "worldpainter-brush" && ui.tool.cancel()));
+    isActive.subscribe(value => value ? ui.activateTool(tool) : (ui.tool && ui.tool.id === "worldpainter-tool" && ui.tool.cancel()));
 }
 
 function getTransformation(cx: number, cy: number, angle: number, dx: number, dy: number) {

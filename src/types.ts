@@ -18,7 +18,19 @@ export type ProfileModifier = (f: ProfileFun1D, p: number) => ProfileFun1D;
 
 export type Norm = (x: number, y: number) => number;
 
-export type ToolMode = "sculpt" | "brush";
+export type ToolType = "brush" | "sculpt";
+
 export type ToolShape = "square" | "circle" | "diamond";
 
-export type SculptMode = "relative" | "absolute";
+export type ToolMode = "relative" | "absolute" | "plateau";
+
+export type LookUp<T> = { [key: number]: { [key: number]: T } };
+
+export type Fun1Num<T = number> = (x: number) => T;
+export type Fun2Num<T = number> = (x: number, y: number) => T;
+
+export type SelectionDesc = {
+    center: CoordsXY,
+    tiles: CoordsXY[],
+    transformation: Fun2Num<CoordsXY>,
+};

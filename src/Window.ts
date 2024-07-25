@@ -5,9 +5,9 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { button, compute, graphics, groupbox, horizontal, label, spinner, store, twoway, vertical, window } from "openrct2-flexui";
-import { SculptMode, ToolMode, ProfileFun1D, ProfileModifier, ToolShape, Norm } from './types';
-import { linear, createProfileImage, constant, gauss, circle, euclidean, supremum, manhattan, createShapeImage, unmodified, crater, mesa1, mesa2, toFun2D, inverted, cubic3, cubic1, cubic4, cubic2, cubic5 } from './profiles';
+import { button, compute, graphics, groupbox, horizontal, spinner, store, twoway, vertical, window } from "openrct2-flexui";
+import { ToolMode, ProfileFun1D, ProfileModifier, ToolShape, Norm, ToolType } from './types';
+import { linear, createProfileImage, constant, gauss, circle, euclidean, supremum, manhattan, unmodified, crater, mesa1, mesa2, toFun2D, inverted, cubic3, cubic1, cubic4, cubic2, cubic5 } from './profiles';
 import { imageOf } from "./images";
 
 function tooltipOf(obj: any): string {
@@ -62,14 +62,14 @@ function graphicsOf(name: Parameters<typeof imageOf>[0]) {
     });
 }
 
-const toolModes: ToolMode[] = ["brush", "sculpt"];
 const toolShapes: ToolShape[] = ["square", "circle", "diamond"];
-const applyModes: SculptMode[] = ["relative", "absolute"];
+const toolTypes: ToolType[] = ["brush", "sculpt"];
+const toolMode: ToolMode[] = ["relative", "absolute"];
 
 export const isActive = store(false);
-export const toolMode = store("sculpt");
+export const activeTool = store<ToolType>("brush");
 export const sensitivity = store(3);
-export const applyMode = store("relative");
+export const sculptMode = store<ToolMode>("relative");
 export const toolWidth = store(40);
 const toolLengthInput = store(8);
 const squareAspectRatio = store(true);
@@ -89,7 +89,7 @@ const apply = (profile: ProfileFun1D, isValley: boolean = false, modifier: Profi
     return isValley ? inverted(profile) : profile;
 }
 
-export const profileFun = compute(baseProfile, compute(brushIsValley, toolMode, (v, d) => v && d !== "sculpt"), toolNorm, profileModifier, profileParameter, (f, v, s, m, p) => toFun2D(apply(f, v, m, p), s));
+export const profileFun = compute(baseProfile, compute(brushIsValley, activeTool, (v, d) => v && d !== "sculpt"), toolNorm, profileModifier, profileParameter, (f, v, s, m, p) => toFun2D(apply(f, v, m, p), s));
 
 const win = window({
     title: "WorldPainter",
@@ -150,11 +150,11 @@ const win = window({
             width: "100%",
             content: [
                 horizontal({
-                    content: toolModes.map(mode => button({
-                        ...imageOf(mode),
-                        tooltip: tooltipOf(mode),
-                        onClick: () => toolMode.set(mode),
-                        isPressed: compute(toolMode, val => val === mode),
+                    content: toolTypes.map(type => button({
+                        ...imageOf(type),
+                        tooltip: tooltipOf(type),
+                        onClick: () => activeTool.set(type),
+                        isPressed: compute(activeTool, val => val === type),
                     })),
                 }),
             ],
@@ -163,17 +163,25 @@ const win = window({
             text: "Tool settings: TODO",
             content: [
                 horizontal({
-                    content: applyModes.map(mode => button({
-                        ...imageOf(mode),
-                        tooltip: tooltipOf(mode),
-                        onClick: () => applyMode.set(mode),
-                        isPressed: compute(applyMode, val => val === mode),
-                    })),
+                    content: [
+                        ...toolMode.map(mode => button({
+                            ...imageOf(mode as "relative" | "absolute"),
+                            tooltip: tooltipOf(mode),
+                            onClick: () => sculptMode.set(mode),
+                            isPressed: compute(sculptMode, val => val === mode),
+                        })),
+                        button({
+                            height: 20,
+                            text: "plateau",
+                            onClick: () => sculptMode.set("plateau"),
+                            isPressed: compute(sculptMode, val => val === "plateau"),
+                        }),
+                    ],
                 }),
                 horizontal({
                     content: [
-                        label({
-                            text: "Sensitivity:",
+                        button({
+                            ...imageOf("sensitivity"),
                         }),
                         spinner({
                             minimum: 0,
@@ -262,12 +270,7 @@ const win = window({
     onOpen: () => isActive.set(true),
     onClose: () => isActive.set(false),
 });
-isActive.subscribe(value => value ? win.open() : win.close());
 
-export function open(): void {
-    win.open();
-}
-
-export function close(): void {
-    win.close();
+export function init(): void {
+    isActive.subscribe(value => value ? win.open() : win.close());
 }

@@ -7,8 +7,9 @@
 
 /// <reference path="../../openrct2.d.ts" />
 
+import * as TerrainManager from "./TerrainManager";
+import * as Tools from './tools';
 import * as Window from "./Window";
-import * as TerrainTool from "./TerrainTool";
 
 registerPlugin({
     name: "worldpainter",
@@ -19,8 +20,10 @@ registerPlugin({
     minApiVersion: 80,
     targetApiVersion: 80,
     main: () => {
-        TerrainTool.init();
-        Window.open();
-        ui.registerMenuItem("WorldPainter", Window.open);
+        Tools.init();
+        Window.init();
+        TerrainManager.init();
+        ui.registerMenuItem("WorldPainter", () => Window.isActive.set(true));
+        Window.isActive.set(true);
     },
 });

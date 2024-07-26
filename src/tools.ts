@@ -5,7 +5,7 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { toolLength, toolNorm, toolRotation, toolWidth, isActive, sensitivity, activeTool } from './Window';
+import { toolLength, toolNorm, toolRotation, toolWidth, isActive, sensitivity, toolType } from './Window';
 import * as TerrainManager from "./TerrainManager";
 import { Fun2Num, SelectionDesc } from './types';
 import { compute } from 'openrct2-flexui';
@@ -36,7 +36,7 @@ abstract class BaseTool {
         this.onUp();
         ui.mainViewport.visibilityFlags &= ~(1 << 7);
         this.onFinish();
-        if (activeTool.get() === this.getName())
+        if (toolType.get() === this.getName())
             isActive.set(false);
     }
     // tool implementation
@@ -182,5 +182,5 @@ export function init(): void {
         "brush": new Brush(),
         "sculpt": new Sculpt(),
     };
-    compute(isActive, activeTool, (isActive, activeTool) => isActive ? tools[activeTool].activate() : (ui.tool && ui.tool.id.startsWith("worldpainter") && ui.tool.cancel()));
+    compute(isActive, toolType, (isActive, activeTool) => isActive ? tools[activeTool].activate() : (ui.tool && ui.tool.id.startsWith("worldpainter") && ui.tool.cancel()));
 }

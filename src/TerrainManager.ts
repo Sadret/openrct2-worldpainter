@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 import { Fun2Num, LookUp, SelectionDesc } from './types';
-import { isActive, profileFun, sculptMode } from './Window';
+import { isActive, profileFun, toolMode } from './Window';
 
 type Num4 = [number, number, number, number];
 
@@ -139,7 +139,7 @@ export function apply(delta: number): void {
 }
 
 function getStrategy(selectionDesc: SelectionDesc): Fun2Num {
-    switch (sculptMode.get()) {
+    switch (toolMode.get()) {
         case "relative":
             return (surface, delta) => surface + delta;
         case "absolute":

@@ -14,8 +14,6 @@ export type ProfileFun2D = (x: number, y: number) => number;
 /** input are tile coordinates, output is height delta */
 export type Profile = (x: number, y: number) => number;
 
-export type ProfileModifier = (f: ProfileFun1D, p: number) => ProfileFun1D;
-
 export type Norm = (x: number, y: number) => number;
 
 export type ToolType = "brush" | "sculpt";

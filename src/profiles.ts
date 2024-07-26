@@ -5,7 +5,7 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { Norm, ProfileFun1D, ProfileModifier } from './types';
+import { Norm, ProfileFun1D } from './types';
 
 export const constant: ProfileFun1D = () => 1;
 export const linear: ProfileFun1D = r => 1 - r;
@@ -24,11 +24,6 @@ export const toFun2D = (f: ProfileFun1D, norm: (x: number, y: number) => number)
 export const supremum: Norm = (x, y) => Math.max(Math.abs(x), Math.abs(y));
 export const euclidean: Norm = (x, y) => Math.sqrt(x ** 2 + y ** 2);
 export const manhattan: Norm = (x, y) => Math.abs(x) + Math.abs(y);
-
-export const unmodified: ProfileModifier = f => f;
-export const mesa1: ProfileModifier = (f, p) => p < 1 ? r => Math.min(f(r), (1 - p)) / (1 - p) : constant;
-export const mesa2: ProfileModifier = (f, p) => r => r <= p ? 1 : f((r - p) / (1 - p));
-export const crater: ProfileModifier = (f, p) => r => 1 - Math.abs(f(r) / (1 - p / 2) - 1);
 
 export const inverted = (f: ProfileFun1D) => (r: number) => -f(r);
 

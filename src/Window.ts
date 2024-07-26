@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 import { button, compute, graphics, groupbox, horizontal, spinner, store, twoway, window } from "openrct2-flexui";
-import { ToolMode, ProfileFun1D, ToolShape, Norm, ToolType } from './types';
+import { Fun2Num, ToolMode, ToolShape, ToolType } from './types';
 import { linear, createProfileImage, constant, gauss, circle, euclidean, supremum, manhattan, toFun2D, inverted, cubic3, cubic1, cubic4, cubic2, cubic5 } from './profiles';
 import { imageOf } from "./images";
 
@@ -41,7 +41,7 @@ function tooltipOf(obj: any): string {
     };
 }
 
-function normOf(shape: ToolShape): Norm {
+function normOf(shape: ToolShape): Fun2Num {
     switch (shape) {
         case "square": return supremum;
         case "circle": return euclidean;

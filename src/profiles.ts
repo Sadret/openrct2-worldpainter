@@ -5,29 +5,29 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { Norm, ProfileFun1D } from './types';
+import { Fun1Num, Fun2Num } from './types';
 
-export const constant: ProfileFun1D = () => 1;
-export const linear: ProfileFun1D = r => 1 - r;
-export const gauss: ProfileFun1D = r => 256 ** -(r ** 2);
-export const circle: ProfileFun1D = r => Math.sqrt(1 - r ** 2);
+export const constant: Fun1Num = () => 1;
+export const linear: Fun1Num = r => 1 - r;
+export const gauss: Fun1Num = r => 256 ** -(r ** 2);
+export const circle: Fun1Num = r => Math.sqrt(1 - r ** 2);
 
 const createCubic = (n: number, m: number) => (r: number) => 1 - n * r + (-3 + 2 * n + m) * r ** 2 + (2 - n - m) * r ** 3;
-export const cubic1: ProfileFun1D = createCubic(0, 2);
-export const cubic2: ProfileFun1D = createCubic(0, 1);
-export const cubic3: ProfileFun1D = createCubic(0, 0);
-export const cubic4: ProfileFun1D = createCubic(1, 0);
-export const cubic5: ProfileFun1D = createCubic(2, 0);
+export const cubic1: Fun1Num = createCubic(0, 2);
+export const cubic2: Fun1Num = createCubic(0, 1);
+export const cubic3: Fun1Num = createCubic(0, 0);
+export const cubic4: Fun1Num = createCubic(1, 0);
+export const cubic5: Fun1Num = createCubic(2, 0);
 
-export const toFun2D = (f: ProfileFun1D, norm: (x: number, y: number) => number) => (x: number, y: number) => f(Math.min(norm(x, y), 1));
+export const toFun2D = (f: Fun1Num, norm: (x: number, y: number) => number) => (x: number, y: number) => f(Math.min(norm(x, y), 1));
 
-export const supremum: Norm = (x, y) => Math.max(Math.abs(x), Math.abs(y));
-export const euclidean: Norm = (x, y) => Math.sqrt(x ** 2 + y ** 2);
-export const manhattan: Norm = (x, y) => Math.abs(x) + Math.abs(y);
+export const supremum: Fun2Num = (x, y) => Math.max(Math.abs(x), Math.abs(y));
+export const euclidean: Fun2Num = (x, y) => Math.sqrt(x ** 2 + y ** 2);
+export const manhattan: Fun2Num = (x, y) => Math.abs(x) + Math.abs(y);
 
-export const inverted = (f: ProfileFun1D) => (r: number) => -f(r);
+export const inverted = (f: Fun1Num) => (r: number) => -f(r);
 
-export function createProfileImage(profile: ProfileFun1D): number {
+export function createProfileImage(profile: Fun1Num): number {
     const range = ui.imageManager.allocate(1);
     if (!range) return context.getIcon("empty");
     const id = range.start;

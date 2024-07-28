@@ -156,7 +156,16 @@ function getStrategy(selectionDesc: SelectionDesc): Fun2Num {
         case "plateau":
             const { x, y } = selectionDesc.center;
             const targetZ = (getSurface(x, y)?.baseHeight || 0) >> 1;
-            return (surface, delta) => surface < targetZ ? Math.min(targetZ, surface + delta) : Math.max(targetZ, surface - delta);
+            return (surface, delta) => {
+                switch (true) {
+                    case delta < 0 && targetZ < surface:
+                        return Math.max(targetZ, surface + delta);
+                    case delta > 0 && targetZ > surface:
+                        return Math.min(targetZ, surface + delta);
+                    default:
+                        return surface;
+                }
+            };
     }
 }
 

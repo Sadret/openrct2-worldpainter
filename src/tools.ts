@@ -39,6 +39,7 @@ abstract class BaseTool {
         if (toolType.get() === this.getName())
             isActive.set(false);
     }
+
     // tool implementation
     protected onStart(): void { }
     protected onDown(event: ToolEventArgs): void { }
@@ -88,7 +89,7 @@ abstract class BaseTool {
 
     protected getTileSelection(): SelectionDesc {
         return {
-            center: this.cursor,
+            center: { x: this.cursor.x >> 5, y: this.cursor.y >> 5 },
             tiles: this.tiles,
             transformation: this.transformation,
         };

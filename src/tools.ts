@@ -28,11 +28,11 @@ abstract class BaseTool {
 
     public abstract getName(): "brush" | "sculpt";
 
-    protected _onStart(): void {
+    private _onStart(): void {
         ui.mainViewport.visibilityFlags |= 1 << 7;
         this.onStart();
     }
-    protected _onFinish(): void {
+    private _onFinish(): void {
         this.onUp();
         ui.mainViewport.visibilityFlags &= ~(1 << 7);
         this.onFinish();
@@ -151,6 +151,7 @@ class Sculpt extends BaseTool {
             const delta = Math.round(cursorVerticalDiff / pixelPerStep);
             if (delta !== this.lastDelta)
                 this.apply(delta);
+            this.lastDelta = delta;
         } else
             this.setTileSelection(event);
     }

@@ -10,6 +10,9 @@ import * as TerrainManager from "./TerrainManager";
 import { Fun2Num, SelectionDesc, ToolType } from './types';
 import { compute } from 'openrct2-flexui';
 
+const msDelay = compute(sensitivity, sen => 1 << (10 - Math.min(5, sen)));
+const brushDelta = compute(sensitivity, brushIsValley, (sen, biv) => 2 ** Math.max(0, sen - 5) * (biv ? -1 : 1));
+
 abstract class BaseTool {
     protected readonly desc: ToolDesc = {
         id: "worldpainter-" + this.getName(),
@@ -104,17 +107,16 @@ class Brush extends BaseTool {
         return "brush";
     }
 
+    protected apply(): void {
+        super.apply(brushDelta.get());
+        TerrainManager.softReset();
+    }
+
     protected onDown(): void {
         this.down = true;
-        const msDelay = 1 << (10 - Math.min(5, sensitivity.get()));
-        const delta = 2 ** Math.max(0, sensitivity.get() - 5);
         TerrainManager.setSelection(this.getTileSelection());
-        const handler = () => {
-            this.apply(delta);
-            TerrainManager.softReset();
-        };
-        handler();
-        this.handle = context.setInterval(() => handler(), msDelay);
+        this.apply();
+        this.handle = context.setInterval(() => this.apply(), msDelay.get());
     }
 
     protected onMove(event: ToolEventArgs): void {
@@ -170,19 +172,13 @@ class Special extends BaseTool {
         return "special";
     }
 
-    protected apply(delta: number): void {
-        switch (specialMode.get()) {
-            case "smooth": return TerrainManager.smooth(this.tiles, delta);
-            case "flatten": return TerrainManager.flatten(this.tiles, delta);
-            case "rough": return TerrainManager.rough(this.tiles, delta);
-        }
+    protected apply(): void {
+        TerrainManager[specialMode.get()](this.tiles, brushDelta.get());
     }
 
     protected onDown(): void {
-        const msDelay = 1 << (10 - Math.min(5, sensitivity.get()));
-        const delta = 2 ** Math.max(0, sensitivity.get() - 5) * (brushIsValley.get() ? -1 : 1);
-        this.apply(delta);
-        this.handle = context.setInterval(() => this.apply(delta), msDelay);
+        this.apply();
+        this.handle = context.setInterval(() => this.apply(), msDelay.get());
     }
 
     protected onMove(event: ToolEventArgs): void {

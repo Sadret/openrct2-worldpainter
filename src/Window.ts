@@ -93,7 +93,7 @@ export const specialMode = store<SpecialMode>("smooth");
 const profile = store(cubic3);
 
 // resulting profile function
-export const profileFun = compute(toolNorm, toolType, brushIsValley, profile, (norm, type, isValley, profile) => toFun2D(isValley && type === "brush" ? inverted(profile) : profile, norm));
+export const profileFun = compute(toolNorm, profile, (norm, profile) => toFun2D(profile, norm));
 
 const win = window({
     title: "WorldPainter",

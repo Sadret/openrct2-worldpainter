@@ -5,9 +5,9 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { toolLength, toolNorm, toolRotation, toolWidth, isActive, sensitivity, toolType } from './Window';
+import { toolLength, toolNorm, toolRotation, toolWidth, isActive, sensitivity, toolType, brushIsValley } from './Window';
 import * as TerrainManager from "./TerrainManager";
-import { Fun2Num, SelectionDesc } from './types';
+import { Fun2Num, SelectionDesc, ToolType } from './types';
 import { compute } from 'openrct2-flexui';
 
 abstract class BaseTool {
@@ -26,7 +26,7 @@ abstract class BaseTool {
         ui.activateTool(this.desc);
     }
 
-    public abstract getName(): "brush" | "sculpt";
+    public abstract getName(): ToolType;
 
     private _onStart(): void {
         ui.mainViewport.visibilityFlags |= 1 << 7;
@@ -48,9 +48,9 @@ abstract class BaseTool {
     protected onFinish(): void { }
 
     // helper methods
-    private cursor: CoordsXY = undefined as never;
-    private tiles: CoordsXY[] = [];
-    private transformation: Fun2Num<CoordsXY> = (x, y) => ({ x, y });
+    protected cursor: CoordsXY = undefined as never;
+    protected tiles: CoordsXY[] = [];
+    protected transformation: Fun2Num<CoordsXY> = (x, y) => ({ x, y });
 
     protected apply(delta: number): void {
         TerrainManager.apply(delta);
@@ -163,6 +163,33 @@ class Sculpt extends BaseTool {
     }
 }
 
+class Special extends BaseTool {
+    private handle: number = -1;
+
+    public getName(): "special" {
+        return "special";
+    }
+
+    protected apply(delta: number): void {
+        TerrainManager.smooth(this.tiles, delta);
+    }
+
+    protected onDown(): void {
+        const msDelay = 1 << (10 - Math.min(5, sensitivity.get()));
+        const delta = 2 ** Math.max(0, sensitivity.get() - 5) * (brushIsValley.get() ? -1 : 1);
+        this.apply(delta);
+        this.handle = context.setInterval(() => this.apply(delta), msDelay);
+    }
+
+    protected onMove(event: ToolEventArgs): void {
+        this.setTileSelection(event);
+    }
+
+    protected onUp(): void {
+        context.clearInterval(this.handle);
+    }
+}
+
 function getTransformation(cx: number, cy: number, angle: number, dx: number, dy: number): Fun2Num<CoordsXY> {
     const radians = angle * Math.PI / 180;
     const sin = Math.sin(radians);
@@ -183,6 +210,7 @@ export function init(): void {
     const tools = {
         "brush": new Brush(),
         "sculpt": new Sculpt(),
+        "special": new Special(),
     };
     compute(isActive, toolType, (isActive, activeTool) => isActive ? tools[activeTool].activate() : (ui.tool && ui.tool.id.startsWith("worldpainter") && ui.tool.cancel()));
 }

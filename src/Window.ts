@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 import { button, compute, graphics, groupbox, horizontal, spinner, store, twoway, window } from "openrct2-flexui";
-import { Fun2Num, ToolMode, ToolShape, ToolType } from './types';
+import { Fun2Num, SpecialMode, ToolMode, ToolShape, ToolType } from './types';
 import { linear, createProfileImage, constant, gauss, circle, euclidean, supremum, manhattan, toFun2D, inverted, cubic3, cubic1, cubic4, cubic2, cubic5 } from './profiles';
 import { imageOf } from "./images";
 
@@ -58,8 +58,9 @@ function graphicsOf(name: Parameters<typeof imageOf>[0]) {
 }
 
 const toolShapes: ToolShape[] = ["square", "circle", "diamond"];
-const toolTypes: ToolType[] = ["brush", "sculpt"];
-const toolModes: ToolMode[] = ["relative", "absolute"];
+const toolTypes: ToolType[] = ["brush", "sculpt", "special"];
+const toolModes: ToolMode[] = ["relative", "absolute", "plateau"];
+const specialModes: SpecialMode[] = ["smooth"];
 
 // tool is active
 export const isActive = store(false);
@@ -81,7 +82,8 @@ export const toolType = store<ToolType>("brush");
 // tool settings
 export const sensitivity = store(3);
 export const toolMode = store<ToolMode>("relative");
-const brushIsValley = store(false);
+export const brushIsValley = store(false);
+export const specialMode = store<SpecialMode>("smooth");
 
 // mountain shapes
 const profile = store(cubic3);
@@ -163,17 +165,11 @@ const win = window({
                 horizontal({
                     content: [
                         ...toolModes.map(mode => button({
-                            ...imageOf(mode as "relative" | "absolute"),
+                            ...imageOf(mode),
                             tooltip: tooltipOf(mode),
                             onClick: () => toolMode.set(mode),
                             isPressed: compute(toolMode, val => val === mode),
                         })),
-                        button({
-                            height: 20,
-                            text: "plateau",
-                            onClick: () => toolMode.set("plateau"),
-                            isPressed: compute(toolMode, val => val === "plateau"),
-                        }),
                     ],
                 }),
                 horizontal({
@@ -197,6 +193,15 @@ const win = window({
                             }),
                         ),
                     ],
+                }),
+                horizontal({
+                    content: specialModes.map(mode => button({
+                        height: 24,
+                        text: mode,
+                        tooltip: tooltipOf(mode),
+                        onClick: () => specialMode.set(mode),
+                        isPressed: compute(specialMode, val => val === mode),
+                    })),
                 }),
             ],
         }),

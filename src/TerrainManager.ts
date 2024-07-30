@@ -37,19 +37,28 @@ function getSurfaceZ(x: number, y: number): Num4 {
     ) as Num4;
 }
 
-function setSurfaceZ(x: number, y: number, fractional: Num4): void {
+function setSurfaceZ(x: number, y: number, fractional: Num4, up = true): void {
     const surface = getSurface(x, y);
     if (!surface) return;
 
     let integral = fractional.map(corner => Math.round(corner));
 
-    // raise just below height of adjacent corners
-    integral = integral.map((_, corner) => Math.max(
-        integral[corner],
-        integral[(corner + 1) & 3] - 1,
-        integral[(corner + 2) & 3] - 2,
-        integral[(corner + 3) & 3] - 1,
-    ));
+    if (up)
+        // raise just below height of adjacent corners
+        integral = integral.map((_, corner) => Math.max(
+            integral[corner],
+            integral[(corner + 1) & 3] - 1,
+            integral[(corner + 2) & 3] - 2,
+            integral[(corner + 3) & 3] - 1,
+        ));
+    else
+        // lower just above height of adjacent corners
+        integral = integral.map((_, corner) => Math.min(
+            integral[corner],
+            integral[(corner + 1) & 3] + 1,
+            integral[(corner + 2) & 3] + 2,
+            integral[(corner + 3) & 3] + 1,
+        ));
 
     // subtract new height
     const height = Math.max(Math.min(...integral, 0x7F), 1);
@@ -171,4 +180,23 @@ function getStrategy(selectionDesc: SelectionDesc): Fun2Num {
 
 export function init(): void {
     isActive.subscribe(value => value && hardReset());
+}
+
+export function smooth(tiles: CoordsXY[], delta: number): void {
+    hardReset();
+    const fun1 = delta > 0 ? Math.max : Math.min;
+    const fun2 = delta > 0 ? Math.min : Math.max;
+
+    const profile = new Profile<number>((x, y) => {
+        const cornerHeights = cornerOffsets
+            .map(([dx, dy], idx) => [x - dx, y - dy, idx])
+            .filter(([x, y]) => x > 0 && x < map.size.x - 1 && y > 0 && y < map.size.y - 1)
+            .map(([x, y, idx]) => originalProfile.getZ(x, y)[idx]);
+        return fun1(...cornerHeights);
+    });
+    tiles.forEach(({ x, y }) => {
+        const oldProfile = originalProfile.getZ(x, y);
+        const newProfile = cornerOffsets.map(([dx, dy], idx) => fun2(oldProfile[idx] + delta, profile.getZ(x + dx, y + dy))) as Num4;
+        setSurfaceZ(x, y, newProfile, delta > 0);
+    });
 }

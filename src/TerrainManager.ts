@@ -200,3 +200,26 @@ export function smooth(tiles: CoordsXY[], delta: number): void {
         setSurfaceZ(x, y, newProfile, delta > 0);
     });
 }
+
+export function flatten(tiles: CoordsXY[], delta: number): void {
+    tiles.forEach(({ x, y }) => {
+        const surface = getSurface(x, y);
+        if (surface) {
+            if (delta > 0) {
+                if (surface.slope)
+                    surface.baseHeight += 2;
+                if (surface.slope & 0x10)
+                    surface.baseHeight += 2;
+            }
+            surface.slope = 0;
+        }
+    });
+}
+
+export function rough(tiles: CoordsXY[], delta: number): void {
+    tiles.forEach(({ x, y }) => {
+        const surface = getSurface(x, y);
+        if (surface)
+            surface.slope = Math.round(Math.random() * 16);
+    });
+}

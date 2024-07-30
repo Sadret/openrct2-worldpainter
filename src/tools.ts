@@ -5,7 +5,7 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { toolLength, toolNorm, toolRotation, toolWidth, isActive, sensitivity, toolType, brushIsValley } from './Window';
+import { toolLength, toolNorm, toolRotation, toolWidth, isActive, sensitivity, toolType, brushIsValley, specialMode } from './Window';
 import * as TerrainManager from "./TerrainManager";
 import { Fun2Num, SelectionDesc, ToolType } from './types';
 import { compute } from 'openrct2-flexui';
@@ -171,7 +171,11 @@ class Special extends BaseTool {
     }
 
     protected apply(delta: number): void {
-        TerrainManager.smooth(this.tiles, delta);
+        switch (specialMode.get()) {
+            case "smooth": return TerrainManager.smooth(this.tiles, delta);
+            case "flatten": return TerrainManager.flatten(this.tiles, delta);
+            case "rough": return TerrainManager.rough(this.tiles, delta);
+        }
     }
 
     protected onDown(): void {
@@ -187,6 +191,10 @@ class Special extends BaseTool {
 
     protected onUp(): void {
         context.clearInterval(this.handle);
+    }
+
+    protected onFinish(): void {
+        TerrainManager.hardReset();
     }
 }
 

@@ -25,6 +25,10 @@ function tooltipOf(obj: any): string {
         // tool type
         case "absolute": return "Absolute";
         case "relative": return "Relative";
+        // special mode
+        case "smooth": return "Smooth";
+        case "flatten": return "Flatten";
+        case "rough": return "Rough";
         // basic shapes
         case constant: return "Flat";
         case linear: return "Cone";
@@ -60,7 +64,7 @@ function graphicsOf(name: Parameters<typeof imageOf>[0]) {
 const toolShapes: ToolShape[] = ["square", "circle", "diamond"];
 const toolTypes: ToolType[] = ["brush", "sculpt", "special"];
 const toolModes: ToolMode[] = ["relative", "absolute", "plateau"];
-const specialModes: SpecialMode[] = ["smooth"];
+const specialModes: SpecialMode[] = ["smooth", "flatten", "rough"];
 
 // tool is active
 export const isActive = store(false);
@@ -196,8 +200,7 @@ const win = window({
                 }),
                 horizontal({
                     content: specialModes.map(mode => button({
-                        height: 24,
-                        text: mode,
+                        ...imageOf(mode),
                         tooltip: tooltipOf(mode),
                         onClick: () => specialMode.set(mode),
                         isPressed: compute(specialMode, val => val === mode),

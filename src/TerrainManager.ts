@@ -8,6 +8,18 @@
 import { Fun2Num, LookUp, SelectionDesc } from './types';
 import { isActive, profileFun, toolMode } from './Window';
 
+function executeAction(x: number, y: number, height: number, slope: number): void {
+    const args = {
+        x: x << 5,
+        y: y << 5,
+        height: height << 1,
+        style: slope,
+    };
+    context.queryAction("landsetheight", args,
+        result => result.error || context.executeAction("landsetheight", args),
+    );
+}
+
 type Num4 = [number, number, number, number];
 
 function getSurface(x: number, y: number): SurfaceElement | undefined {
@@ -71,16 +83,8 @@ function setSurfaceZ(x: number, y: number, fractional: Num4, up = true): void {
         return slope;
     }, 0);
 
-    const args: LandSetHeightArgs = {
-        x: x << 5,
-        y: y << 5,
-        height: height << 1,
-        style: slope,
-    };
     // set new height and slope
-    context.queryAction("landsetheight", args,
-        result => result.error || context.executeAction("landsetheight", args)
-    );
+    executeAction(x, y, height, slope);
 }
 
 class Profile<T = Num4> {
@@ -205,21 +209,22 @@ export function flatten(tiles: CoordsXY[], delta: number): void {
     tiles.forEach(({ x, y }) => {
         const surface = getSurface(x, y);
         if (surface) {
+            let height = surface.baseHeight >> 1;
             if (delta > 0) {
                 if (surface.slope)
-                    surface.baseHeight += 2;
+                    height += 2;
                 if (surface.slope & 0x10)
-                    surface.baseHeight += 2;
+                    height += 2;
             }
-            surface.slope = 0;
+            executeAction(x, y, height, 0);
         }
     });
 }
 
-export function rough(tiles: CoordsXY[], delta: number): void {
+export function rough(tiles: CoordsXY[]): void {
     tiles.forEach(({ x, y }) => {
         const surface = getSurface(x, y);
         if (surface)
-            surface.slope = Math.round(Math.random() * 16);
+            executeAction(x, y, surface.baseHeight >> 1, Math.round(Math.random() * 16));
     });
 }

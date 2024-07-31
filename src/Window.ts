@@ -5,95 +5,134 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { button, compute, graphics, groupbox, horizontal, spinner, store, twoway, window } from "openrct2-flexui";
-import { Fun2Num, SpecialMode, ToolMode, ToolShape, ToolType } from './types';
-import { linear, createProfileImage, constant, gauss, circle, euclidean, supremum, manhattan, toFun2D, inverted, cubic3, cubic1, cubic4, cubic2, cubic5 } from './profiles';
-import { imageOf } from "./images";
+import { button, compute, FlexiblePosition, graphics, groupbox, horizontal, spinner, store, twoway, WidgetCreator, window, WritableStore } from "openrct2-flexui";
+import * as Images from "./Images";
+import * as Profiles from "./Profiles";
+import type { BrushDirection, Fun1Num, ImageData, SpecialMode, ToolMode, ToolShape, ToolType } from "./types";
 
-function tooltipOf(obj: any): string {
-    switch (obj) {
-        // isValley
-        case false: return "Raise";
-        case true: return "Lower";
-        // tool mode
-        case "brush": return "Brush";
-        case "sculpt": return "Sculpt";
-        // tool shape
-        case "square": return "Square";
-        case "circle": return "Circle";
-        case "diamond": return "Diamond";
-        // tool type
-        case "absolute": return "Absolute";
-        case "relative": return "Relative";
-        // special mode
-        case "smooth": return "Smooth";
-        case "flatten": return "Flatten";
-        case "rough": return "Rough";
-        // basic shapes
-        case constant: return "Flat";
-        case linear: return "Cone";
-        case gauss: return "Bell";
-        case circle: return "Sphere";
-        // cubic shapes
-        case cubic1: return "Cubic 1"; // dome
-        case cubic2: return "Cubic 2"; // ???
-        case cubic3: return "Cubic 3"; // bell
-        case cubic4: return "Cubic 4"; // peak
-        case cubic5: return "Cubic 5"; // peak
-        // default
-        default: return "(unknown)";
+/*
+ * TYPES
+ */
+
+type Image = keyof typeof Images;
+type ToolProfile = keyof typeof Profiles;
+
+/*
+ * UI HELPER FUNCTIONS
+ */
+
+function imageOf(profile: Fun1Num): ImageData {
+    const range = ui.imageManager.allocate(1);
+    if (!range) throw new Error("[WP] Cannot allocate image from image manager.");
+
+    const id = range.start;
+
+    const imgH = 20, imgW = imgH * 2, b = 4, shpH = imgH - b, shpW = shpH * 2;
+    const offset = (profile(1) + profile(0.5) >= 0) ? 0 : shpH;
+
+    const data = new Uint8Array(imgW * imgH);
+    for (let x = 0; x < imgW; x++) {
+        let z = (x < b || x >= imgW - b) ? 0 : profile(Math.abs((shpW - 1) / shpW + (b - x) / (shpW / 2)));
+        let y;
+        for (y = 0; 1 / shpH / 2 + (y - offset - b) / shpH <= z; y++)
+            data[x + imgW * (imgH - 1 - y)] = 90; // inner filling
+
+    }
+    for (let y = 0; y < b + offset; y++) {
+        data[0 + imgW * (imgH - 1 - y)] = 92; // left
+        data[imgW - 1 + imgW * (imgH - 1 - y)] = 88; // right
+    }
+    for (let x = 0; x < imgW; x++)
+        data[x + imgW * (imgH - 1)] = 88; // bottom
+    for (let x = 1; x < imgW - 1; x++) {
+        let y = 0;
+        while (data[x + imgW * y] === 0) y++;
+        for (; data[x + imgW * (y - 1)] * data[(x - 1) + imgW * y] * data[(x + 1) + imgW * y] === 0; y++)
+            data[x + imgW * y] = 92; // top outline
+    }
+    data[0 + imgW * (imgH - b - offset)] = 21; // top left
+    data[0 + imgW * (imgH - 1)] = 89; // bottom left
+    data[(imgW - 1) + imgW * (imgH - 1)] = 87; // bottom right
+    data[(imgW - 1) + imgW * (imgH - b - offset)] = 89; // top right
+
+    const p = 2, data2 = new Uint8Array((imgW + 2 * p) * (imgH + 2 * p));
+    for (let x = 0; x < imgW; x++)
+        for (let y = 0; y < imgH; y++)
+            data2[x + p + (imgW + 2 * p) * (y + p)] = data[x + imgW * y];
+
+    ui.imageManager.setPixelData(id, {
+        type: "raw",
+        width: imgW + 2 * p,
+        height: imgH + 2 * p,
+        data: data2,
+    });
+
+    return {
+        image: id,
+        width: imgW + 2 * p,
+        height: imgH + 2 * p,
     };
 }
 
-function normOf(shape: ToolShape): Fun2Num {
-    switch (shape) {
-        case "square": return supremum;
-        case "circle": return euclidean;
-        case "diamond": return manhattan;
-    }
+function tooltipOf(str: string): string {
+    const temp = str.replace(/_/g, " ");
+    return temp.charAt(0).toUpperCase() + temp.slice(1);
 }
 
-function graphicsOf(name: Parameters<typeof imageOf>[0]) {
-    const image = imageOf(name);
+function graphicsOf(image: ImageData): WidgetCreator<FlexiblePosition> {
     return graphics({
         ...image,
         onDraw: g => g.image(image.image, 0, 0),
     });
 }
 
+function buttonOf<T extends Image | ToolProfile>(value: T, store: WritableStore<T>): WidgetCreator<FlexiblePosition> {
+    return button({
+        ...Images[value as Image] || imageOf(Profiles[value as ToolProfile]),
+        tooltip: tooltipOf(value),
+        onClick: () => store.set(value),
+        isPressed: compute(store, active => active === value),
+    });
+}
+
+/*
+ * SETTINGS VALUES
+ */
+
 const toolShapes: ToolShape[] = ["square", "circle", "diamond"];
 const toolTypes: ToolType[] = ["brush", "sculpt", "special"];
 const toolModes: ToolMode[] = ["relative", "absolute", "plateau"];
+const brushDirections: BrushDirection[] = ["up", "down"];
 const specialModes: SpecialMode[] = ["smooth", "flatten", "rough"];
+const standardProfiles: ToolProfile[] = ["flat", "cone", "bell", "sphere"];
+const cubicProfiles: ToolProfile[] = ["cubic_1", "cubic_2", "cubic_3", "cubic_4", "cubic_5"];
 
-// tool is active
+/*
+ * SETTINGS STORES
+ */
+
 export const isActive = store(false);
 
-// tool shape
-const toolShape = store<ToolShape>("circle");
-export const toolNorm = compute(toolShape, normOf);
+export const toolShape = store<ToolShape>("circle");
 
-// tool size and rotation
 export const toolWidth = store(40);
 const toolLengthInput = store(8);
 const squareAspectRatio = store(true);
 export const toolLength = compute(toolWidth, toolLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
 export const toolRotation = store(0);
 
-// tool type
 export const toolType = store<ToolType>("brush");
 
-// tool settings
-export const sensitivity = store(3);
 export const toolMode = store<ToolMode>("relative");
-export const brushIsValley = store(false);
+export const brushSensitivity = store(3);
+export const brushDirection = store<BrushDirection>("up");
 export const specialMode = store<SpecialMode>("smooth");
 
-// mountain shapes
-const profile = store(cubic3);
+export const toolProfile = store<ToolProfile>("cubic_3");
 
-// resulting profile function
-export const profileFun = compute(toolNorm, profile, (norm, profile) => toFun2D(profile, norm));
+/*
+ * WINDOW
+ */
 
 const win = window({
     title: "WorldPainter",
@@ -106,14 +145,7 @@ const win = window({
                 horizontal({
                     width: "100%",
                     spacing: "1w",
-                    content: toolShapes.map(
-                        shape => button({
-                            ...imageOf(shape),
-                            onClick: () => toolShape.set(shape),
-                            isPressed: compute(toolShape, active => active === shape),
-                            tooltip: tooltipOf(shape),
-                        }),
-                    ),
+                    content: toolShapes.map(shape => buttonOf(shape, toolShape)),
                 }),
             ],
         }),
@@ -122,7 +154,7 @@ const win = window({
             content: [
                 horizontal({
                     content: [
-                        graphicsOf("size"),
+                        graphicsOf(Images.size),
                         spinner({
                             minimum: 2,
                             value: twoway(toolWidth),
@@ -139,7 +171,7 @@ const win = window({
                             value: twoway(toolLengthInput),
                             disabled: squareAspectRatio,
                         }),
-                        graphicsOf("rotation"),
+                        graphicsOf(Images.rotation),
                         spinner({
                             value: twoway(toolRotation),
                             step: 5,
@@ -154,12 +186,7 @@ const win = window({
             width: "100%",
             content: [
                 horizontal({
-                    content: toolTypes.map(type => button({
-                        ...imageOf(type),
-                        tooltip: tooltipOf(type),
-                        onClick: () => toolType.set(type),
-                        isPressed: compute(toolType, val => val === type),
-                    })),
+                    content: toolTypes.map(type => buttonOf(type, toolType)),
                 }),
             ],
         }),
@@ -167,80 +194,40 @@ const win = window({
             text: "Tool settings: TODO",
             content: [
                 horizontal({
-                    content: [
-                        ...toolModes.map(mode => button({
-                            ...imageOf(mode),
-                            tooltip: tooltipOf(mode),
-                            onClick: () => toolMode.set(mode),
-                            isPressed: compute(toolMode, val => val === mode),
-                        })),
-                    ],
+                    content: toolModes.map(mode => buttonOf(mode, toolMode)),
                 }),
                 horizontal({
                     content: [
-                        button({
-                            ...imageOf("sensitivity"),
-                        }),
+                        graphicsOf(Images.sensitivity),
                         spinner({
                             minimum: 0,
                             maximum: 10,
-                            value: twoway(sensitivity),
+                            value: twoway(brushSensitivity),
                         }),
-                        ...[false, true].map(
-                            val => button({
-                                width: 24,
-                                height: 24,
-                                image: 5147 - Number(val) * 2,
-                                onClick: () => brushIsValley.set(val),
-                                isPressed: compute(brushIsValley, active => active === val),
-                                tooltip: tooltipOf(val),
-                            }),
-                        ),
+                        ...brushDirections.map(direction => buttonOf(direction, brushDirection)),
                     ],
                 }),
                 horizontal({
-                    content: specialModes.map(mode => button({
-                        ...imageOf(mode),
-                        tooltip: tooltipOf(mode),
-                        onClick: () => specialMode.set(mode),
-                        isPressed: compute(specialMode, val => val === mode),
-                    })),
+                    content: specialModes.map(mode => buttonOf(mode, specialMode)),
                 }),
             ],
         }),
         groupbox({
             text: "Mountain shape",
-            content: [
+            content: [standardProfiles, cubicProfiles].map(profileList =>
                 horizontal({
-                    content: [constant, linear, gauss, circle].map(
-                        profileFun => button({
-                            width: 44,
-                            height: 24,
-                            image: compute(brushIsValley, isValley => createProfileImage(isValley ? inverted(profileFun) : profileFun)),
-                            onClick: () => profile.set(profileFun),
-                            isPressed: compute(profile, active => active === profileFun),
-                            tooltip: tooltipOf(profileFun),
-                        }),
-                    ),
+                    content: profileList.map(profile => buttonOf(profile, toolProfile)),
                 }),
-                horizontal({
-                    content: [cubic1, cubic2, cubic3, cubic4, cubic5].map(
-                        profileFun => button({
-                            width: 44,
-                            height: 24,
-                            image: compute(brushIsValley, isValley => createProfileImage(isValley ? inverted(profileFun) : profileFun)),
-                            onClick: () => profile.set(profileFun),
-                            isPressed: compute(profile, active => active === profileFun),
-                            tooltip: tooltipOf(profileFun),
-                        }),
-                    ),
-                }),
-            ],
+            ),
         }),
     ],
     onOpen: () => isActive.set(true),
     onClose: () => isActive.set(false),
 });
+
+/*
+ * INITIALISATION
+ */
 
 export function init(): void {
     isActive.subscribe(value => value ? win.open() : win.close());

@@ -5,8 +5,10 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { Fun2Num, LookUp, SelectionDesc } from './types';
-import { isActive, profileFun, toolMode } from './Window';
+import * as Profiles from "./Profiles";
+import * as Shapes from "./Shapes";
+import type { Fun2Num, LookUp, SelectionDesc } from "./types";
+import { isActive, toolMode, toolProfile, toolShape } from "./Window";
 
 function executeAction(x: number, y: number, height: number, slope: number): void {
     const args = {
@@ -133,10 +135,10 @@ let deltaProfile: Fun2Num = () => 0;
 export function setSelection(selectionDesc: SelectionDesc): void {
     strategy = getStrategy(selectionDesc);
     tiles = selectionDesc.tiles;
-    const profileFunction = profileFun.get();
+    const profileFun: Fun2Num = (x, y) => Profiles[toolProfile.get()](Math.min(Shapes[toolShape.get()](x, y), 1));
     const profile = new Profile((x, y) => {
         const rel = selectionDesc.transformation(x, y);
-        return profileFunction(rel.x, rel.y);
+        return profileFun(rel.x, rel.y);
     });
     deltaProfile = (x, y) => profile.getZ(x, y);
 }
@@ -212,9 +214,9 @@ export function flatten(tiles: CoordsXY[], delta: number): void {
             let height = surface.baseHeight >> 1;
             if (delta > 0) {
                 if (surface.slope)
-                    height += 2;
+                    height++;
                 if (surface.slope & 0x10)
-                    height += 2;
+                    height++;
             }
             executeAction(x, y, height, 0);
         }

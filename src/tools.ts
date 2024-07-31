@@ -5,13 +5,14 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { toolLength, toolNorm, toolRotation, toolWidth, isActive, sensitivity, toolType, brushIsValley, specialMode } from './Window';
+import { compute } from "openrct2-flexui";
+import * as Shapes from "./Shapes";
 import * as TerrainManager from "./TerrainManager";
-import { Fun2Num, SelectionDesc, ToolType } from './types';
-import { compute } from 'openrct2-flexui';
+import type { Fun2Num, SelectionDesc, ToolType } from "./types";
+import { brushDirection, brushSensitivity, isActive, specialMode, toolLength, toolRotation, toolShape, toolType, toolWidth } from "./Window";
 
-const msDelay = compute(sensitivity, sen => 1 << (10 - Math.min(5, sen)));
-const brushDelta = compute(sensitivity, brushIsValley, (sen, biv) => 2 ** Math.max(0, sen - 5) * (biv ? -1 : 1));
+const msDelay = compute(brushSensitivity, sen => 1 << (10 - Math.min(5, sen)));
+const brushDelta = compute(brushSensitivity, brushDirection, (sen, biv) => 2 ** Math.max(0, sen - 5) * (biv === "up" ? 1 : -1));
 
 abstract class BaseTool {
     protected readonly desc: ToolDesc = {
@@ -45,8 +46,8 @@ abstract class BaseTool {
 
     // tool implementation
     protected onStart(): void { }
-    protected onDown(event: ToolEventArgs): void { }
-    protected onMove(event: ToolEventArgs): void { }
+    protected onDown(_event: ToolEventArgs): void { }
+    protected onMove(_event: ToolEventArgs): void { }
     protected onUp(): void { }
     protected onFinish(): void { }
 
@@ -75,14 +76,14 @@ abstract class BaseTool {
 
             const center = { x: (event.mapCoords.x >> 5) + (1 - dx & 1) / 2, y: (event.mapCoords.y >> 5) + (1 - dy & 1) / 2 };
 
-            const norm = toolNorm.get();
+            const shape = Shapes[toolShape.get()];
             this.tiles = [];
             this.transformation = getTransformation(center.x, center.y, toolRotation.get(), dx, dy);
 
             for (let x = Math.floor(center.x - r); x < center.x + r; x++)
                 for (let y = Math.floor(center.y - r); y < center.y + r; y++) {
                     const rel = this.transformation(x, y);
-                    if (norm(rel.x, rel.y) <= 1) //{
+                    if (shape(rel.x, rel.y) <= 1) //{
                         this.tiles.push({ x: x, y: y });
                 }
 

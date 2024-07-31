@@ -8,7 +8,7 @@
 /// <reference path="../../openrct2.d.ts" />
 
 import * as TerrainManager from "./TerrainManager";
-import * as Tools from './tools';
+import * as Tools from "./Tools";
 import * as Window from "./Window";
 
 registerPlugin({

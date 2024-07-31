@@ -8,7 +8,7 @@
 export type ToolShape = "square" | "circle" | "diamond";
 export type ToolType = "brush" | "sculpt" | "special";
 export type ToolMode = "relative" | "absolute" | "plateau";
-export type SpecialMode = "smooth" | "flatten" | "rough";
+export type SpecialMode = "smooth" | "flat" | "rough";
 export type BrushDirection = "up" | "down";
 
 export type LookUp<T> = { [key: number]: { [key: number]: T } };

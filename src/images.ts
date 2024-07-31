@@ -5,7 +5,8 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import type { ImageData } from "./types";
+import * as Profiles from "./Profiles";
+import type { Fun1Num, ImageData } from "./types";
 
 function createImageFromBase64(base64: string): ImageData {
     const range = ui.imageManager.allocate(1);
@@ -25,31 +26,120 @@ function createImageFromBase64(base64: string): ImageData {
     };
 }
 
-// tool shapes
-export const square = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABEUlEQVR4nO3XWwqDMBCFYXc82YP7jQ8u4JT2obRg02jmckbyMFARa/LzIboAWObg3WDGwDeIGQQzyEItRNYV276/5vk7ej00IYQkTGiIcrDx6DChImpDSFQY9xAgF+MqYvtzzCAmVIQMijk6TxNELog4K6Z1TBNEFEVYnHcLIgYiRp4pWmGoRZQAMdQiauf1RVHMrUQUBTEpRYjhe0xqEWLw/65CqrKIkftRPENKgveUricvlL5NrEW07t+7z+4gSCjiyrfO6SBoiMkoQi0IbiJCPQg+FpZRhFkQJBVhHgQ/NsYqwi0IkohwD4IBMR4iwoKAVER4EDTERIigCQISEXRBQDbhCwDZhC8AZBO+AJDNA2S6y3FDiVwkAAAAAElFTkSuQmCC");
-export const circle = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABIklEQVR4nO2ZSwqEMBBEvXF7B+8bFx6ghpnFMAOGRPuTasmiwRBNwutHibgAWGbhy2DCwL8QEwgmkIXaENk27Mfxqff16PPQgBASMOEdl5/5tTHfet4DXFjH5WRcDO+nASLKjl4x5o5RYUDkhhFXDWiNa+udgXMDIoZGeGfMHTBDjdiNjOhZzwyIJDLCwhjqzNgNxykyZB3wPJUhxTEjwgwRIiO066syRAiN0O7X89ZJbYQ4zJsaUoKN8MgU0wxZB3fc4q3TlbyoGMNmhMXXcDcQPNQIlSElkRFuhkhyI1wzpCQyogXSJUPkAUaogaCycVYjzIDgIUaYA4HCGAYj3IAgqRHuQHABXMR/ljRAENTxdEBAVsMPALIafgCQ1fADgKxe4UnmPbbLZ4QAAAAASUVORK5CYII=");
-export const diamond = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABCUlEQVR4nO2YXQ6DIBCEuTHcwfsuDxxgTPvQpImVAPuH3YdJJAbcjB+zaAKQQvh4EGbgG4gwBGFIuouIIARhSGIlJB8Hamtvva4l75fF+1fr9zRtRFYY0+D413pXxk0bkhWJWCVmZv6jCKkDY/YtA4dERIa0yJAUGdIiQ5JUV9n+HEKMXUWsy2RHXUVivitCiJmIu/nsWwYOieA4mZoSQoIZ0Xueywwpxt9C4hlCzohQIQQLb9yaCPEMIaH/FRpdSyRDyoZEiGYILZwDtIkYNYIlQ/IDiFgipCoTwNm1RDIkb0iEaIbUjYjoGbllhhTP/0PwJzIvAM5kXgCcybwAOJN5AXAm8wLgTCcI9Ose0w+2GAAAAABJRU5ErkJggg==");
+const g = 4, p = 2, eps = 1e-3;
 
-// tool site and rotation
-export const size = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBGciAxOSBKdWwgMjAyNCAxMzo1ODoyOCArMDEwMJ8teacAAABNSURBVHicY2iePp2BHMwAIt5//vwfGaMreo9FHkMClw3vCWkk2cZmHDa/RxND0YjN9GYcfJTAITtUm6mh8T0pTn1PbuC8HzoJgJxQBQCyt9zg8BITeAAAAABJRU5ErkJggg==");
-export const rotation = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBGciAxOSBKdWwgMjAyNCAxMzo1ODo1NCArMDEwMFJIGsoAAABOSURBVHicY2iePp2BHMyATfD958//kTFBjega3uMxAKsmfC5oxqURl5/eY9NISFMzFs2DVON7qByGRkKa3xMTqiRHBz5bsSUEstIpRRoBHRHDPJdWyUYAAAAASUVORK5CYII=");
+// profile is [-1, 1] -> [0, 1]
+function getDataForProfile(profile: Fun1Num, colour: number, imgW: number, imgH: number): Uint8Array {
+    const cnvsW = (imgW >> 1) - p, cnvsH = imgH - 2 * p;
+    const prflW = cnvsW - g, prflH = cnvsH - g;
+    const data = new Uint8Array(imgH * imgW);
 
-// tool type
-export const brush = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAIAAAB02dgaAAAAB3RJTUUH6AcSCxUZIXjRfgAAAAlwSFlzAAALEgAACxIB0t1+/AAAAARnQU1BAACxjwv8YQUAAAAGdFJOUwCjAJMAf2bOiNMAAAKFSURBVHja7ZktTMNAFMdvZGICMTmBQCARJCAQiMklVE5MTEwgJiYqKkkoCXKiCQgEggQEYrIkCMQEEoFEICYQFYjJCRL4w4XLuF4/3msvI2QvC2mOvY/fvXu9u7fK1emR+C+ysugAypSqevIvQ6qy33NKD6hIGFVl4uk8Ipno+lMhyofZbDxf+3WSSj84a+0OBG+Zvb7M3IFot7zSSSAwC+NwwdClwUiMx7dBs3tgg0QKjMPFVr9hF2Zto7a312Asa6rAxWGTrEVeZu1OhOp6n4SWkGAWxuECjqzD2EMqgpEGI2sjsxDhFYuhFB65rtIxMqNaMSrIEpeFyHi3PE6rTs/DBw/a+L5pPFNyRlWRxxlMTOhNhkEt6TU1vr7w3BleAJoPTQVR+q77ZTAIvv7OPR+5bkWI4yD4mBvfqb9TXcSjOgmF3GcqpLOZ8mfEkOFqISo8YGybxpOQ0jGMQoNR/ozZ0GY9T2ZEcpYYWxkHJnN2U8ZJ2aMKrRA1987v2VWz7iRkxknIjBPLHg+JnJmyZp1qxwpMPJR4ZgSrZhaQmZxZWtbMsmaKwMRDEcuasVEzHBgc5OZbGTZOAJoLKzDqoD66aZyMhYZUSs2kuMgLI02kKBvvG0Yk9qk5p4t4VPfR5NepWbWa4srp1yajM8abiupl/vv9YCZh9H0G/253oBxCGQIFaj8NgkDDy+H3gz5+axrPlJxRVVOUMwVXjoeHyO+V0HbCrOPYv7ujX85IUTEbGjYaaOxbOh/Gdh+wCBINBoXoDNettjMVEhzBnUUY2x1AKewGGqdmJNLobmiDBGbZfcCfnzR6Tj84I2mu1muk7+c3i32DpCI3GVHwoPnX5F/9DPgJK0MNyF173g0AAAAASUVORK5CYII=");
-export const sculpt = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAIAAAB02dgaAAAAB3RJTUUH6AcSCxUz+sMYqAAAAAlwSFlzAAALEgAACxIB0t1+/AAAAARnQU1BAACxjwv8YQUAAAAGdFJOUwCjAJMAf2bOiNMAAAI0SURBVHja5ZghT8NAFMdbaMgUWVDICUIQhBC2kMlJQqoIAoFAICoQ/QRbcQhEE8wEYgl8hM0hkBOEICcmJgiZRJGKJfDWS2+XXu/ddR3tMf5pluvLXfZ+9++969V8uGsZy6KVohP4ZzBepwvXn4cBhsmo+9YewwUNKZKmMBTj9GxMItCQImkHw2OwwpE0gsExVJC0gFHHwJGsokFmmc098GkcaART3xk5/uy2P6jAlCP9HT9IjKeAefm0PNeFhuf7tfKEjbdc1+Ti6jqqX7G3/YF8V4kNSQFDMOww3SlMhAS/rTB+7fvfTHw+pOySwJBZt6MUa+VpsNu5pS4BRrU8qXLxQpCEMNSN2KwbYdtmnDGZPrx7eSIlwLAPVU0868SlXhhn14zIvbxhEtcGMuuGYM2I3PttJJOcZ9JWKtGsL6TiwSYIxRrvk1jNTPZwxqbCO2MInDGV++TkDCtkdhfiHi/omRGD/O8yOqPbmpHm7V3YfNCiNsWKrxFVpIz7jMFUvGpUuKXC3832nU3MGVb5rxneGSkM5gyrmEsZ9xm67eYgYRmhSCq7O/6WkJskNRES6gnWErJm8sdQgqFIad/NCpGpw+dZvhanrWakHmhxbJZmj3emp2gtvs40rPH7MJhvLAwsDUukvXpy3CiaxajsHXx8HbZvXne3g/UN1YcFMJpNa23LgeEawaRF4jG0g1FBEmFoCiNCwjGItCjNuJ4f7+G3cX4p7alLaUakgkGkRWlelH4Aqj94vTMAGRYAAAAASUVORK5CYII=");
-export const special = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABS0lEQVR4nO2XzQ2DMAyF2YNjR+DQgTpAugPjdRc4ZIBXtaJVFIXE+XdCDk8COQj78yMxE4BpCH8GAwY6AyJfM1Ks6QYIIgFcAggi4HQPQx7qFojUinMVq8YpYC7nAPQMBB57BHVd9YLATMEPinXFLuVXn2tTfLPEczmhOBChgTDd/0A8DXHuYLxAbA5H7AoIX0el0uM+47YsCDmRSECEVmisQ1KBOStOBRJyIpE/DQTEYxxlA2AqTr22QXFBdYIQmR2ir491iA0IRcU6LgqfSjqU4DlEMHaIrSg9FuqSZvYQJHAJBWxTDkEiIN3tIfLoMOXU8IXSjUPkyZwRDQQN7yG+c4kXEDCfVH2UFAgSdTwnCMqMQYXS3N8uMrsk+AWi8ORZCkr1JDGAgDWU6l3DAALWUKonhwEErFU9ATBT9QTATNUTADNVTwDM9AY5D1YRBFP0tQAAAABJRU5ErkJggg==");
+    // helper functions in profile coordinates
+    function get(x: number, y: number): number {
+        return data[(imgW / 2 + x) + imgW * (imgH - 1 - p - g - y)];
+    }
+    function set(x: number, y: number, c: number): void {
+        data[(imgW / 2 + x) + imgW * (imgH - 1 - p - g - y)] = c;
+    }
+    function add(x: number, y: number, d: number): void {
+        data[(imgW / 2 + x) + imgW * (imgH - 1 - p - g - y)] += d;
+    }
 
-// tool mode
-export const absolute = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADQAAAAgCAIAAADSXcwxAAAAK3RFWHRDcmVhdGlvbiBUaW1lAERvIDE4IEp1bCAyMDI0IDIxOjU5OjI0ICswMTAwPXAU6QAAAAd0SU1FB+gHEhQFH5WjglcAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAEZ0FNQQAAsY8L/GEFAAAABnRSTlMAowCTAH9mzojTAAAA+0lEQVR42mNcPLmeYbACpoF2wKjjRh03mMCo40YdR2/AQgtDdUI04Owra24MIscBXXbhwgk41yDEgmz3UTla0VwGBEAuckAOmOMwXUah+6jmOFwuo8R9gzq3Usdx+IMNAsgIPCo4jhiXkec+LEUJGYnDwMACq1Mo9Db2cu7FC/JLTgiQkMDuQ6CLiS/5BiBDEB+5IyC3kgqIDLwBCzli3DeQ0UrQfQOc5vC7D1qU+CSUPPiyBcKmvByBGIK18MMK0NwHdDHLHQGE44Auo4qb0NxHrsYPMgwgxw3qogQacsCQBLp3oB0DBaCQ40FyHDCOISE5GADEZQyDPFoBX81m5bebt7sAAAAASUVORK5CYII=");
-export const relative = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADQAAAAgCAIAAADSXcwxAAAAK3RFWHRDcmVhdGlvbiBUaW1lAERvIDE4IEp1bCAyMDI0IDIxOjU4OjQ2ICswMTAwg0JneQAAAAd0SU1FB+gHEhQFDBEdw4kAAAAJcEhZcwAACxIAAAsSAdLdfvwAAAAEZ0FNQQAAsY8L/GEFAAAABnRSTlMAowCTAH9mzojTAAABFklEQVR42uXWoQ7CMBAG4EImEcgJHgCBmNxDIPcAPMQ8D8EjYJE8BHICgUAgJxE8ALe0CQSacr277ppwQSwk677+R49N9rutybWm2oDRcatmCZ8cccDqupPIUsI4QZkwTlYmiROXSeJSlAwuRWwyuEQyGZy3gMufdlxcIDb43hJ1cJiGcnxjnFayj46LOgc0HxGX7oRycTQZIbxoHCezWF/hfXz4nqqqkRTaHkI4qL6/MNctS/8OQVw19fmAWl/hjx/f3D94K4ktZHhqyWF8mm396VP+zYV9bpSsN+3tcbTX/DliF0GOQ/M1WUFcXOcvHMhETB8+6o33hRlwWY8SlxwkCV5tjKshudkbDnpsk8yhrMxk3tYnS/V9ra73be0AAAAASUVORK5CYII=");
-export const plateau = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADQAAAAgCAYAAABdP1tmAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBEbyAxOCBKdWwgMjAyNCAyMTo1ODo0NiArMDEwMGdWifoAAAC1SURBVHic7ZXLCYAwEES3Q0uwhJTg0TL2aAkpI2V49GABI3oIiiAajGt0DgOBQMibl48AkC9FrDdAINAQzI8N7xD4KMD8KIHPNuzbpSHsSzBvlIZwXIJ5ozQEGkLRkd8Ahb6DZbIA+dBkyby2eneYVCh5K1AqlBAoPGdIEyy92pAmQBUBpBegigHSk1BxMIzj5h/IBbOGuivqXQR9xEjutFr/AEi9WyZKjGurPdBXItYbuBtoAu88aoeKPt7zAAAAAElFTkSuQmCC");
+    // ground
+    for (let x = -cnvsW; x < cnvsW; x++)
+        for (let y = -g; y < 0; y++)
+            set(x, y, colour); // inner
+    for (let x = -cnvsW; x < cnvsW; x++) {
+        add(x, -g, -2); // bottom
+        // add(x, -1, 2); // top
+    }
+    for (let y = -g; y < 0; y++) {
+        add(-cnvsW, y, 2); // left
+        add(cnvsW - 1, y, -2); // right
+    }
 
-// brush settings
-export const sensitivity = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAACgAAAAOCAYAAABdC15GAAAACXBIWXMAAAsSAAALEgHS3X78AAAAV0lEQVR4nGNonj6dYTBjhoF2QPOwcuD7z5//gzA1LXiPZiYhPsEQHGyOZCDGwIF0JAOxBmITf4+DTU1HDk0Hvh/MUfx+EDmueUgWM82DDDMMtAOah7oDAdcdVdF8hI6bAAAAAElFTkSuQmCC");
-export const up = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAACQAAAAYCAYAAACSuF9OAAAACXBIWXMAAAsSAAALEgHS3X78AAABbklEQVR4nGP4//8/w2DCDMPKQQdfnvlvtzv5v9JGHzgG8dc83POfrg46iMUhyFhzcxDZjiLLMQbbwnE6BtlRS+9v+09zB5nviMWwvObiVLDF02+txpAjNQpJcsyEG0uxOgQZY3MUKVFItGOW3t+GYknemS6cFvz4+/N/6fkJGI6iqoPMkaIq4Xj9f5ClhPSghxZVHaSEZDAxjsGmj2oOWooWXaSkO2R9xKQjkrN5Hp60gw2D0g4p6Qiv5JqHezDKHKzR9XvF//8/W/8Tk44IhRLR0aSELZv/3v7//xeF//8/MUDwZ47//78n/ycUSvgKTKKrhRpsjvksgHAMMv7//T+hsglUpmF1EL46SQlXNOFzDAj/aCeqwMRWmqPkAmy4BktpjBJNWDEHVt+DPAYqw3DVfXgdhNUh/6EYFAL4HPTNg6RSHNk+orPvf3wYJf1QZtYwdNDv7f8Hl4M+SwwyB31Czu4Zg8FBHFQLHZCDAAzpsc4IhUJgAAAAAElFTkSuQmCC");
-export const down = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAACQAAAAYCAYAAACSuF9OAAAACXBIWXMAAAsSAAALEgHS3X78AAABdElEQVR4nM2VvUsDQRDFr0xpmVLsrrOzs7awsrEShDSp7NIJViJYpZH8BQHBbYIQA16TKk1A7MRGrrTNibkQ5MloDm4/5nbXNeSKBwe7O/vbeTNzEYAoWLMIv2ogNFY4TN5eway0caBZCSZr1gxo+VAzIATGqi3Q+fMNdgaHkjpPXeRfC/6SzwO5mFXlV+xZ032FfjbE90fGxdPJBQ9FLV4F9LENHxAJSKQJ9h9b7Kbe650ORRngYLItrcDpYTYYYjCmtPvSd4CaO8OYMkOXj9+n2kPZ4uq/DVG2kr61ffMWkDVkmxxgKPafukykid060uISWN5qa6pNu8NjUMygto9tWarQ2fRagjFZ5A0klCz5ALna5AUEJbArjGqX6zlvoB5XRwoMzbDizN7o5H+BYmVw2qZ4uXZ87HIGEmkijYCqbKltTjPNp+6cNwpmmhdQpnnjY5U3EJiBycm1zYOBUGGh7bewNiAwFoaABANhTdo4gAr0Da2esc4I1VU6AAAAAElFTkSuQmCC");
+    // profile
+    for (let x = -prflW; x < prflW; x++) {
+        let z = profile((x + 0.5) / prflW);
+        for (let y = 0; (y + 0.5) / prflH <= z + eps; y++)
+            set(x, y, colour); // inner
+    }
+    for (let x = -cnvsW; x < cnvsW; x++) {
+        let y = prflH - 1;
+        while (get(x, y) === 0) y--;
+        add(x, y, 2); // top outline
+        for (y--; get(x, y - 1) * get(x - 1, y) * get(x + 1, y) === 0 && y >= -1; y--)
+            add(x, y, 2); // side outline
+    }
 
-// special modes
-export const smooth = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADQAAAAgCAYAAABdP1tmAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBEbyAxOCBKdWwgMjAyNCAyMTo1ODo0NiArMDEwMGdWifoAAADXSURBVHic7dWxDYMwEAVQb5gRMoJHSMkYLjOCx/hjpEzBABeBQIpCAjY+6+4cF7+i+Q+wvyMi11KcdIEOov6FSPy36WeIlF4KeNwpNaT9lptKhujnshG33UA7aMU0AcIbxjwIHxjTIHzBmAXhB8YkCDsYcyAcYEyBkIARByFj2VNzhIm1QDnLzh1wg3KXXTUIJ5ZdLQgnl10lCAXLrg6EwmVXBQLDsqsBgWnZVYDAuOwioOc4Vlv2WigsmV7sBiRZrjRDuP4BKEQ/P7AYP1y2oFbipAtwg14ytHX4SF+XrwAAAABJRU5ErkJggg==");
-export const flatten = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADQAAAAgCAYAAABdP1tmAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBEbyAxOCBKdWwgMjAyNCAyMTo1ODo0NiArMDEwMGdWifoAAADlSURBVHic7da9DQIxDAXgbMgIjJARKG+MlIzwxvAYlBQ3gFFOFCeOQEIcO3ekeJWlyJ/yZ8fM7khx1g0MEI8dYvNjM+4QCz4KdLuyRbjVKxcXD/DJxDroUpScNdkC9AsmB0UWoBrMNxRpgyQwn1CkCZLEIIFSA7XA4A1KBdQSgxdUc5AGBitUc5AWBitUMSj3x9bGoAYkPQF0CyJDDKRB1hhIgnrAQArUCwYSoJ4wqAX1hkHtP2TdPCRB1o2jBnSfZ/MJoBRFz8SrsQHtAYFEpnD+A1CAXwp7jJ9OW9BR4qwbkAY9AKWMfgpsj7TqAAAAAElFTkSuQmCC");
-export const rough = createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADQAAAAgCAYAAABdP1tmAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBEbyAxOCBKdWwgMjAyNCAyMTo1ODo0NiArMDEwMGdWifoAAADsSURBVHic7ZXBDcIwDEW9ISMwQkbg2DFyZISM4TE4cugAH1GpCCg0buzKtPhgqVKt5zzbTQkA7SnI+wAhhJgQ3NcmviHEpQD3VUJc2/DvbkwI0ya4dzQmhPkmuHc0JoSYEIY14MsZknW450lCytLmUe2gEnguaTakHIs8qh20VsRCaGkt1gjVAFqhljqsFZqDaIRaa7CF0DdQq5CGz1ZCn2AtQlo2Wwq9A5cKWXDZWugZukTIislrCI3gWs6YJ+Vpb00aH659L/rj/2Lkkh6CLxMpfNpkdPn4B0K5pOHFFiN1h6nQXoK8D2AtdAMg/GHN5BGGagAAAABJRU5ErkJggg==");
+    return data;
+}
+
+function blendData(front: Uint8Array, back: Uint8Array): Uint8Array {
+    const result = new Uint8Array(front.length);
+    for (let i = 0; i < front.length; i++)
+        result[i] = front[i] || back[i];
+    return result;
+}
+
+function createImageFromProfile(profile: Fun1Num, original: Fun1Num = () => 0, width: number = 44, height = (width >> 1) + p): ImageData {
+    const range = ui.imageManager.allocate(1);
+    if (!range) throw new Error("[WP] Cannot allocate image from image manager.");
+    const data = blendData(getDataForProfile(original, 89, width, height), getDataForProfile(profile, 88, width, height));
+
+    ui.imageManager.setPixelData(range.start, {
+        type: "raw",
+        width: width,
+        height: height,
+        data: data,
+    });
+
+    return {
+        image: range.start,
+        width: width,
+        height: height,
+    };
+}
+
+const shape: Fun1Num = x => Profiles.cubic_3(Math.abs(x)) * 2 / 3;
+
+const images = {
+    // tool shapes
+    square: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABEUlEQVR4nO3XWwqDMBCFYXc82YP7jQ8u4JT2obRg02jmckbyMFARa/LzIboAWObg3WDGwDeIGQQzyEItRNYV276/5vk7ej00IYQkTGiIcrDx6DChImpDSFQY9xAgF+MqYvtzzCAmVIQMijk6TxNELog4K6Z1TBNEFEVYnHcLIgYiRp4pWmGoRZQAMdQiauf1RVHMrUQUBTEpRYjhe0xqEWLw/65CqrKIkftRPENKgveUricvlL5NrEW07t+7z+4gSCjiyrfO6SBoiMkoQi0IbiJCPQg+FpZRhFkQJBVhHgQ/NsYqwi0IkohwD4IBMR4iwoKAVER4EDTERIigCQISEXRBQDbhCwDZhC8AZBO+AJDNA2S6y3FDiVwkAAAAAElFTkSuQmCC"),
+    circle: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABIklEQVR4nO2ZSwqEMBBEvXF7B+8bFx6ghpnFMAOGRPuTasmiwRBNwutHibgAWGbhy2DCwL8QEwgmkIXaENk27Mfxqff16PPQgBASMOEdl5/5tTHfet4DXFjH5WRcDO+nASLKjl4x5o5RYUDkhhFXDWiNa+udgXMDIoZGeGfMHTBDjdiNjOhZzwyIJDLCwhjqzNgNxykyZB3wPJUhxTEjwgwRIiO066syRAiN0O7X89ZJbYQ4zJsaUoKN8MgU0wxZB3fc4q3TlbyoGMNmhMXXcDcQPNQIlSElkRFuhkhyI1wzpCQyogXSJUPkAUaogaCycVYjzIDgIUaYA4HCGAYj3IAgqRHuQHABXMR/ljRAENTxdEBAVsMPALIafgCQ1fADgKxe4UnmPbbLZ4QAAAAASUVORK5CYII="),
+    diamond: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABCUlEQVR4nO2YXQ6DIBCEuTHcwfsuDxxgTPvQpImVAPuH3YdJJAbcjB+zaAKQQvh4EGbgG4gwBGFIuouIIARhSGIlJB8Hamtvva4l75fF+1fr9zRtRFYY0+D413pXxk0bkhWJWCVmZv6jCKkDY/YtA4dERIa0yJAUGdIiQ5JUV9n+HEKMXUWsy2RHXUVivitCiJmIu/nsWwYOieA4mZoSQoIZ0Xueywwpxt9C4hlCzohQIQQLb9yaCPEMIaH/FRpdSyRDyoZEiGYILZwDtIkYNYIlQ/IDiFgipCoTwNm1RDIkb0iEaIbUjYjoGbllhhTP/0PwJzIvAM5kXgCcybwAOJN5AXAm8wLgTCcI9Ose0w+2GAAAAABJRU5ErkJggg=="),
+
+    // tool site and rotation
+    size: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBGciAxOSBKdWwgMjAyNCAxMzo1ODoyOCArMDEwMJ8teacAAABNSURBVHicY/j//z8DOZgBRDy/ffg/MkZX9ByLPIYELhueE9JIso3/cdj8HE0MRSM20//j4KMEDtmh+p8aGp+T4tTn5AbO86GTAMgJVQC4NW2v7MTPiQAAAABJRU5ErkJggg=="),
+    rotation: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBGciAxOSBKdWwgMjAyNCAxMzo1ODo1NCArMDEwMFJIGsoAAABPSURBVHicY/j//z8DOZgBm+Dz24f/I2OCGtE1PMdjAFZN+FzwH5dGXH56jk0jIU3/sWgepBqfQ+UwNBLS/JyYUCU5OvDZii0hkJVOKdIIAPnfZ1tDEES5AAAAAElFTkSuQmCC"),
+
+    // tool type
+    brush: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAIAAAB02dgaAAAAB3RJTUUH6AcSCxUZIXjRfgAAAAlwSFlzAAALEgAACxIB0t1+/AAAAARnQU1BAACxjwv8YQUAAAAGdFJOUwCjAJMAf2bOiNMAAAKFSURBVHja7ZktTMNAFMdvZGICMTmBQCARJCAQiMklVE5MTEwgJiYqKkkoCXKiCQgEggQEYrIkCMQEEoFEICYQFYjJCRL4w4XLuF4/3msvI2QvC2mOvY/fvXu9u7fK1emR+C+ysugAypSqevIvQ6qy33NKD6hIGFVl4uk8Ipno+lMhyofZbDxf+3WSSj84a+0OBG+Zvb7M3IFot7zSSSAwC+NwwdClwUiMx7dBs3tgg0QKjMPFVr9hF2Zto7a312Asa6rAxWGTrEVeZu1OhOp6n4SWkGAWxuECjqzD2EMqgpEGI2sjsxDhFYuhFB65rtIxMqNaMSrIEpeFyHi3PE6rTs/DBw/a+L5pPFNyRlWRxxlMTOhNhkEt6TU1vr7w3BleAJoPTQVR+q77ZTAIvv7OPR+5bkWI4yD4mBvfqb9TXcSjOgmF3GcqpLOZ8mfEkOFqISo8YGybxpOQ0jGMQoNR/ozZ0GY9T2ZEcpYYWxkHJnN2U8ZJ2aMKrRA1987v2VWz7iRkxknIjBPLHg+JnJmyZp1qxwpMPJR4ZgSrZhaQmZxZWtbMsmaKwMRDEcuasVEzHBgc5OZbGTZOAJoLKzDqoD66aZyMhYZUSs2kuMgLI02kKBvvG0Yk9qk5p4t4VPfR5NepWbWa4srp1yajM8abiupl/vv9YCZh9H0G/253oBxCGQIFaj8NgkDDy+H3gz5+axrPlJxRVVOUMwVXjoeHyO+V0HbCrOPYv7ujX85IUTEbGjYaaOxbOh/Gdh+wCBINBoXoDNettjMVEhzBnUUY2x1AKewGGqdmJNLobmiDBGbZfcCfnzR6Tj84I2mu1muk7+c3i32DpCI3GVHwoPnX5F/9DPgJK0MNyF173g0AAAAASUVORK5CYII="),
+    sculpt: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAIAAAB02dgaAAAAB3RJTUUH6AcSCxUz+sMYqAAAAAlwSFlzAAALEgAACxIB0t1+/AAAAARnQU1BAACxjwv8YQUAAAAGdFJOUwCjAJMAf2bOiNMAAAI0SURBVHja5ZghT8NAFMdbaMgUWVDICUIQhBC2kMlJQqoIAoFAICoQ/QRbcQhEE8wEYgl8hM0hkBOEICcmJgiZRJGKJfDWS2+XXu/ddR3tMf5pluvLXfZ+9++969V8uGsZy6KVohP4ZzBepwvXn4cBhsmo+9YewwUNKZKmMBTj9GxMItCQImkHw2OwwpE0gsExVJC0gFHHwJGsokFmmc098GkcaART3xk5/uy2P6jAlCP9HT9IjKeAefm0PNeFhuf7tfKEjbdc1+Ti6jqqX7G3/YF8V4kNSQFDMOww3SlMhAS/rTB+7fvfTHw+pOySwJBZt6MUa+VpsNu5pS4BRrU8qXLxQpCEMNSN2KwbYdtmnDGZPrx7eSIlwLAPVU0868SlXhhn14zIvbxhEtcGMuuGYM2I3PttJJOcZ9JWKtGsL6TiwSYIxRrvk1jNTPZwxqbCO2MInDGV++TkDCtkdhfiHi/omRGD/O8yOqPbmpHm7V3YfNCiNsWKrxFVpIz7jMFUvGpUuKXC3832nU3MGVb5rxneGSkM5gyrmEsZ9xm67eYgYRmhSCq7O/6WkJskNRES6gnWErJm8sdQgqFIad/NCpGpw+dZvhanrWakHmhxbJZmj3emp2gtvs40rPH7MJhvLAwsDUukvXpy3CiaxajsHXx8HbZvXne3g/UN1YcFMJpNa23LgeEawaRF4jG0g1FBEmFoCiNCwjGItCjNuJ4f7+G3cX4p7alLaUakgkGkRWlelH4Aqj94vTMAGRYAAAAASUVORK5CYII="),
+    special: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABS0lEQVR4nO2XzQ2DMAyF2YNjR+DQgTpAugPjdRc4ZIBXtaJVFIXE+XdCDk8COQj78yMxE4BpCH8GAwY6AyJfM1Ks6QYIIgFcAggi4HQPQx7qFojUinMVq8YpYC7nAPQMBB57BHVd9YLATMEPinXFLuVXn2tTfLPEczmhOBChgTDd/0A8DXHuYLxAbA5H7AoIX0el0uM+47YsCDmRSECEVmisQ1KBOStOBRJyIpE/DQTEYxxlA2AqTr22QXFBdYIQmR2ir491iA0IRcU6LgqfSjqU4DlEMHaIrSg9FuqSZvYQJHAJBWxTDkEiIN3tIfLoMOXU8IXSjUPkyZwRDQQN7yG+c4kXEDCfVH2UFAgSdTwnCMqMQYXS3N8uMrsk+AWi8ORZCkr1JDGAgDWU6l3DAALWUKonhwEErFU9ATBT9QTATNUTADNVTwDM9AY5D1YRBFP0tQAAAABJRU5ErkJggg=="),
+
+    // tool mode
+    relative: createImageFromProfile(x => shape(x) + Number(x < 0) / 3, x => Number(x < 0) / 3, 68, 51),
+    absolute: createImageFromProfile(x => Math.max(shape(x), Number(x < 0) / 3), x => Number(x < 0) / 3, 68, 51),
+    plateau: createImageFromProfile(x => Math.min(shape(x), 1 / 3), x => Number(x < 0) / 3, 68, 51),
+
+    // brush settings
+    sensitivity: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAACgAAAAOCAYAAABdC15GAAAACXBIWXMAAAsSAAALEgHS3X78AAAAV0lEQVR4nN3UwQkAIAwDwOy/lmM4QMaI+BWlPoSmPgLqIx4VhCQ4B9kAfQVkb5p5eQGXzmgfTtANiZvCTCRuC3fnPKxfImsC6fzENMKp5DcjsyAboOrAATKasd/4meGdAAAAAElFTkSuQmCC"),
+    sensitivity_disabled: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAACgAAAAOCAYAAABdC15GAAAACXBIWXMAAAsSAAALEgHS3X78AAAAVklEQVR4nN3UMQoAIAwDwPzPh/iIPD7iKkodhKYOAXWIRwUhCc5BNkBfAdmbZl5ewKUz2ocTdEPipjATidvC3TkP65fImkA6PzGNcCr5zcgsyAaoOnAABidLv1VGf/kAAAAASUVORK5CYII="),
+    up: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADAAAAAOCAYAAABpcp9aAAAACXBIWXMAAAsSAAALEgHS3X78AAAAvUlEQVR4nGP4//8/w1DGDCPaA4dvT/4PwrR0oLKxMV7zKXL4/O35YEwLjygbG/+fX2z8//NpaTCNyyNkOR7mcHRMDU8oIzkcHWPzCNUcT6knlPE4HJ9HqOp4SjyhbEyc42E4OlqYeA+Q4nhyPREdLfwfhnF5BlkN0R4gx/HUSE6f8YQ61jxw//t+eGmCjMl1PHoJhW4m1T1wmAqOJRbnt/uPeuA/egzAQoYe2DvZnGAMRKNlWOSMS3Y9MBgxAOfWeGGL72g7AAAAAElFTkSuQmCC"),
+    down: createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAADAAAAAOCAYAAABpcp9aAAAACXBIWXMAAAsSAAALEgHS3X78AAAAy0lEQVR4nGP4//8/w1DGDMPGA/e/7/9/+PZkDEypBdjMnL89H6+5ysbG/3FhnB6AGYyOKfEELjPz2/0JeuDzaWkMTJYHyPUEPvPo7oH5JHqCkFkD4oH5RHqCGHMGzAPzCXiCWDOweUAZLbPi8gB6hibZcpgnkD2CXLpQ4oHPWByNC0dHC5PvAXSPkKoPmweSzaX/X18uTJTjQepA6in2ALkYXx5IxuMRZIeTnQdo7YH/WDyCzeEYHoAZTA/snWxOdJGcjMPhGB4YqhgA3+FpNWtOt7cAAAAASUVORK5CYII="),
+
+    // special modes
+    smooth: createImageFromProfile(x => Math.ceil(x) / 2 + 0.5 - Math.abs(0.5 - Math.abs(x)), x => Math.round(x + 1) / 2, 68),
+    flat: createImageFromProfile(x => Math.ceil(Math.min(1, x + 1, 1.5 - x) * 2) / 2, x => Math.min(1, x + 1, 1.5 - x), 68),
+    rough: createImageFromProfile(x => (x < -0.5 || x > 0) ? Math.abs(x) % 0.5 : 0.5, () => 0, 68),
+};
+
+type ImageName = keyof typeof images;
+type ProfileName = keyof typeof Profiles;
+export function getImage(name: ImageName | ProfileName): ImageData {
+    if (name in images)
+        return images[name as ImageName];
+    else
+        return createImageFromProfile(x => Profiles[name as ProfileName](Math.abs(x)));
+}

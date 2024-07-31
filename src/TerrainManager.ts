@@ -207,7 +207,7 @@ export function smooth(tiles: CoordsXY[], delta: number): void {
     });
 }
 
-export function flatten(tiles: CoordsXY[], delta: number): void {
+export function flat(tiles: CoordsXY[], delta: number): void {
     tiles.forEach(({ x, y }) => {
         const surface = getSurface(x, y);
         if (surface) {

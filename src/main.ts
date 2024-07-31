@@ -13,7 +13,7 @@ import * as Window from "./Window";
 
 registerPlugin({
     name: "worldpainter",
-    version: "1.0.0",
+    version: "beta-0",
     authors: ["Sadret"],
     type: "local",
     licence: "GPL-3.0",

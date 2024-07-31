@@ -5,93 +5,51 @@
  * under the GNU General Public License version 3.
  *****************************************************************************/
 
-import { button, compute, FlexiblePosition, graphics, groupbox, horizontal, spinner, store, twoway, WidgetCreator, window, WritableStore } from "openrct2-flexui";
-import * as Images from "./Images";
+import { button, compute, FlexiblePosition, graphics, groupbox, horizontal, label, spinner, store, twoway, WidgetCreator, window, WritableStore, type ButtonParams, type GraphicsParams, type Store } from "openrct2-flexui";
+import { getImage } from './Images';
 import * as Profiles from "./Profiles";
-import type { BrushDirection, Fun1Num, ImageData, SpecialMode, ToolMode, ToolShape, ToolType } from "./types";
+import type { BrushDirection, SpecialMode, ToolMode, ToolShape, ToolType } from "./types";
 
 /*
  * TYPES
  */
 
-type Image = keyof typeof Images;
 type ToolProfile = keyof typeof Profiles;
+type ImageName = Parameters<typeof getImage>[0];
 
 /*
  * UI HELPER FUNCTIONS
  */
-
-function imageOf(profile: Fun1Num): ImageData {
-    const range = ui.imageManager.allocate(1);
-    if (!range) throw new Error("[WP] Cannot allocate image from image manager.");
-
-    const id = range.start;
-
-    const imgH = 20, imgW = imgH * 2, b = 4, shpH = imgH - b, shpW = shpH * 2;
-    const offset = (profile(1) + profile(0.5) >= 0) ? 0 : shpH;
-
-    const data = new Uint8Array(imgW * imgH);
-    for (let x = 0; x < imgW; x++) {
-        let z = (x < b || x >= imgW - b) ? 0 : profile(Math.abs((shpW - 1) / shpW + (b - x) / (shpW / 2)));
-        let y;
-        for (y = 0; 1 / shpH / 2 + (y - offset - b) / shpH <= z; y++)
-            data[x + imgW * (imgH - 1 - y)] = 90; // inner filling
-
-    }
-    for (let y = 0; y < b + offset; y++) {
-        data[0 + imgW * (imgH - 1 - y)] = 92; // left
-        data[imgW - 1 + imgW * (imgH - 1 - y)] = 88; // right
-    }
-    for (let x = 0; x < imgW; x++)
-        data[x + imgW * (imgH - 1)] = 88; // bottom
-    for (let x = 1; x < imgW - 1; x++) {
-        let y = 0;
-        while (data[x + imgW * y] === 0) y++;
-        for (; data[x + imgW * (y - 1)] * data[(x - 1) + imgW * y] * data[(x + 1) + imgW * y] === 0; y++)
-            data[x + imgW * y] = 92; // top outline
-    }
-    data[0 + imgW * (imgH - b - offset)] = 21; // top left
-    data[0 + imgW * (imgH - 1)] = 89; // bottom left
-    data[(imgW - 1) + imgW * (imgH - 1)] = 87; // bottom right
-    data[(imgW - 1) + imgW * (imgH - b - offset)] = 89; // top right
-
-    const p = 2, data2 = new Uint8Array((imgW + 2 * p) * (imgH + 2 * p));
-    for (let x = 0; x < imgW; x++)
-        for (let y = 0; y < imgH; y++)
-            data2[x + p + (imgW + 2 * p) * (y + p)] = data[x + imgW * y];
-
-    ui.imageManager.setPixelData(id, {
-        type: "raw",
-        width: imgW + 2 * p,
-        height: imgH + 2 * p,
-        data: data2,
-    });
-
-    return {
-        image: id,
-        width: imgW + 2 * p,
-        height: imgH + 2 * p,
-    };
-}
 
 function tooltipOf(str: string): string {
     const temp = str.replace(/_/g, " ");
     return temp.charAt(0).toUpperCase() + temp.slice(1);
 }
 
-function graphicsOf(image: ImageData): WidgetCreator<FlexiblePosition> {
+function graphicsOf(name: ImageName, params: GraphicsParams = {}): WidgetCreator<FlexiblePosition> {
+    const image = getImage(name);
     return graphics({
+        ...params,
         ...image,
         onDraw: g => g.image(image.image, 0, 0),
     });
 }
 
-function buttonOf<T extends Image | ToolProfile>(value: T, store: WritableStore<T>): WidgetCreator<FlexiblePosition> {
+function buttonOf<T extends ImageName | ToolProfile>(value: T, store: WritableStore<T>, params: ButtonParams = {}): WidgetCreator<FlexiblePosition> {
     return button({
-        ...Images[value as Image] || imageOf(Profiles[value as ToolProfile]),
+        ...params,
+        ...getImage(value),
         tooltip: tooltipOf(value),
         onClick: () => store.set(value),
         isPressed: compute(store, active => active === value),
+    });
+}
+
+function center(content: WidgetCreator<FlexiblePosition>[]): WidgetCreator<FlexiblePosition> {
+    return horizontal({
+        width: "100%",
+        spacing: "1w",
+        content: content,
     });
 }
 
@@ -103,8 +61,8 @@ const toolShapes: ToolShape[] = ["square", "circle", "diamond"];
 const toolTypes: ToolType[] = ["brush", "sculpt", "special"];
 const toolModes: ToolMode[] = ["relative", "absolute", "plateau"];
 const brushDirections: BrushDirection[] = ["up", "down"];
-const specialModes: SpecialMode[] = ["smooth", "flatten", "rough"];
-const standardProfiles: ToolProfile[] = ["flat", "cone", "bell", "sphere"];
+const specialModes: SpecialMode[] = ["smooth", "flat", "rough"];
+const standardProfiles: ToolProfile[] = ["block", "cone", "bell", "sphere"];
 const cubicProfiles: ToolProfile[] = ["cubic_1", "cubic_2", "cubic_3", "cubic_4", "cubic_5"];
 
 /*
@@ -115,10 +73,9 @@ export const isActive = store(false);
 
 export const toolShape = store<ToolShape>("circle");
 
-export const toolWidth = store(40);
-const toolLengthInput = store(8);
+export const toolWidth = store(32);
 const squareAspectRatio = store(true);
-export const toolLength = compute(toolWidth, toolLengthInput, squareAspectRatio, (w, l, s) => s ? w : l);
+export const toolLength = store(toolWidth.get());
 export const toolRotation = store(0);
 
 export const toolType = store<ToolType>("brush");
@@ -130,23 +87,32 @@ export const specialMode = store<SpecialMode>("smooth");
 
 export const toolProfile = store<ToolProfile>("cubic_3");
 
+const not = (store: Store<boolean>) => compute(store, value => !value);
+const and = (store1: Store<boolean>, store2: Store<boolean>) => compute(store1, store2, (value1, value2) => value1 && value2);
+const or = (store1: Store<boolean>, store2: Store<boolean>) => compute(store1, store2, (value1, value2) => value1 || value2);
+const visibilityIf = (store: Store<boolean>) => ({ visibility: compute(store, value => value ? "visible" : "none") });
+function equals<T>(store: Store<T>, val: T): WritableStore<boolean> { return compute(store, value => value === val); }
+
+const sensitivityEnabled = or(equals(toolType, "brush"), and(equals(toolType, "special"), equals(specialMode, "smooth")));
+const directionDisabled = or(equals(toolType, "sculpt"), and(equals(toolType, "special"), equals(specialMode, "rough")));
+
+compute(toolType, type => type === "brush" && toolMode.get() === "absolute" && toolMode.set("relative"));
+compute(toolWidth, squareAspectRatio, (width, square) => square && toolLength.set(width));
+
 /*
  * WINDOW
  */
 
 const win = window({
-    title: "WorldPainter",
+    title: "WorldPainter (beta-0)",
     width: 258,
     height: "auto",
+    colours: [24, 24],
     content: [
         groupbox({
             text: "Tool shape",
             content: [
-                horizontal({
-                    width: "100%",
-                    spacing: "1w",
-                    content: toolShapes.map(shape => buttonOf(shape, toolShape)),
-                }),
+                center(toolShapes.map(shape => buttonOf(shape, toolShape))),
             ],
         }),
         groupbox({
@@ -154,7 +120,7 @@ const win = window({
             content: [
                 horizontal({
                     content: [
-                        graphicsOf(Images.size),
+                        graphicsOf("size"),
                         spinner({
                             minimum: 2,
                             value: twoway(toolWidth),
@@ -168,10 +134,10 @@ const win = window({
                         }),
                         spinner({
                             minimum: 2,
-                            value: twoway(toolLengthInput),
+                            value: twoway(toolLength),
                             disabled: squareAspectRatio,
                         }),
-                        graphicsOf(Images.rotation),
+                        graphicsOf("rotation"),
                         spinner({
                             value: twoway(toolRotation),
                             step: 5,
@@ -183,43 +149,47 @@ const win = window({
         }),
         groupbox({
             text: "Tool type",
-            width: "100%",
             content: [
-                horizontal({
-                    content: toolTypes.map(type => buttonOf(type, toolType)),
-                }),
+                center(toolTypes.map(type => buttonOf(type, toolType))),
             ],
         }),
         groupbox({
-            text: "Tool settings: TODO",
+            text: "Tool settings",
             content: [
                 horizontal({
-                    content: toolModes.map(mode => buttonOf(mode, toolMode)),
-                }),
-                horizontal({
                     content: [
-                        graphicsOf(Images.sensitivity),
+                        graphicsOf("sensitivity", visibilityIf(sensitivityEnabled)),
+                        graphicsOf("sensitivity_disabled", visibilityIf(not(sensitivityEnabled))),
                         spinner({
+                            disabled: not(sensitivityEnabled),
                             minimum: 0,
                             maximum: 10,
                             value: twoway(brushSensitivity),
                         }),
-                        ...brushDirections.map(direction => buttonOf(direction, brushDirection)),
+                        ...brushDirections.map(direction => buttonOf(direction, brushDirection, { disabled: directionDisabled, })),
                     ],
                 }),
-                horizontal({
-                    content: specialModes.map(mode => buttonOf(mode, specialMode)),
-                }),
+                center(toolModes.map(mode => buttonOf(mode, toolMode, {
+                    ...visibilityIf(not(equals(toolType, "special"))),
+                    disabled: mode === "absolute" ? equals(toolType, "brush") : false,
+                }))),
+                center(specialModes.map(mode => buttonOf(mode, specialMode, visibilityIf(equals(toolType, "special"))))),
             ],
         }),
         groupbox({
             text: "Mountain shape",
+            ...visibilityIf(not(equals(toolType, "special"))),
             content: [standardProfiles, cubicProfiles].map(profileList =>
                 horizontal({
-                    content: profileList.map(profile => buttonOf(profile, toolProfile)),
+                    content: profileList.map(profile => buttonOf(profile, toolProfile, visibilityIf(not(equals(toolType, "special"))))),
                 }),
             ),
         }),
+        label({
+            text: "Copyright (c) 2024 Sadret",
+            disabled: true,
+            alignment: "centred",
+        })
     ],
     onOpen: () => isActive.set(true),
     onClose: () => isActive.set(false),

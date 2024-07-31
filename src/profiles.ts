@@ -7,7 +7,7 @@
 
 import type { Fun1Num } from "./types";
 
-export const flat: Fun1Num = () => 1;
+export const block: Fun1Num = () => 1;
 export const cone: Fun1Num = r => 1 - r;
 export const bell: Fun1Num = r => 256 ** -(r ** 2);
 export const sphere: Fun1Num = r => Math.sqrt(1 - r ** 2);

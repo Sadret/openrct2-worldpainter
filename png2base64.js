@@ -1,5 +1,5 @@
-import sharp from "sharp";
 import clipboard from "clipboardy";
+import sharp from "sharp";
 
 const file = `./images/${process.argv[2]}.png`;
 

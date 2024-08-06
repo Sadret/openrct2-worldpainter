@@ -20,6 +20,9 @@ registerPlugin({
     minApiVersion: 80,
     targetApiVersion: 80,
     main: () => {
+        if (typeof ui === "undefined")
+            return console.log("[worldpainter] Loading cancelled: game runs in headless mode.");
+
         Tools.init();
         Window.init();
         TerrainManager.init();

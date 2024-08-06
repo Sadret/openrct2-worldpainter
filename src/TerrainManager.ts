@@ -10,6 +10,14 @@ import * as Shapes from "./Shapes";
 import type { Fun2Num, LookUp, SelectionDesc } from "./types";
 import { isActive, toolMode, toolProfile, toolShape } from "./Window";
 
+// array includes
+function includes(array: any[], value: any): boolean {
+    for (const val of array)
+        if (val === value)
+            return true;
+    return false;
+}
+
 type Num4 = [number, number, number, number];
 
 function getSurface(x: number, y: number): SurfaceElement | undefined {
@@ -83,6 +91,17 @@ function getActionArgs(x: number, y: number, fractional: Num4, up = true): LandS
 
 function executeAll(tiles: CoordsXY[], fun: (tile: CoordsXY) => LandSetHeightArgs | undefined): boolean {
     if (tiles.length === 0) return true;
+
+    if (network.mode === "client") {
+        const group = network.getGroup(network.currentPlayer.group);
+        if (!includes(group.permissions, "terraform")) {
+            ui.showError(
+                context.formatString("{STRINGID}", 5637),
+                context.formatString("{STRINGID}", 5638),
+            );
+            return false;
+        }
+    }
 
     let cost = 0;
     let errorResult: GameActionResult = {};

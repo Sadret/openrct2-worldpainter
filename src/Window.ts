@@ -6,7 +6,7 @@
  *****************************************************************************/
 
 import { button, compute, FlexiblePosition, graphics, groupbox, horizontal, label, spinner, store, twoway, WidgetCreator, window, WritableStore, type ButtonParams, type GraphicsParams, type Store } from "openrct2-flexui";
-import { getImage } from './Images';
+import { createImage } from './Images';
 import * as Profiles from "./Profiles";
 import type { BrushDirection, SpecialMode, ToolMode, ToolShape, ToolType } from "./types";
 
@@ -15,7 +15,7 @@ import type { BrushDirection, SpecialMode, ToolMode, ToolShape, ToolType } from 
  */
 
 type ToolProfile = keyof typeof Profiles;
-type ImageName = Parameters<typeof getImage>[0];
+type ImageName = Parameters<typeof createImage>[0];
 
 /*
  * UI HELPER FUNCTIONS
@@ -27,7 +27,7 @@ function tooltipOf(str: string): string {
 }
 
 function graphicsOf(name: ImageName, params: GraphicsParams = {}): WidgetCreator<FlexiblePosition> {
-    const image = getImage(name);
+    const image = createImage(name);
     return graphics({
         ...params,
         ...image,
@@ -38,7 +38,7 @@ function graphicsOf(name: ImageName, params: GraphicsParams = {}): WidgetCreator
 function buttonOf<T extends ImageName | ToolProfile>(value: T, store: WritableStore<T>, params: ButtonParams = {}): WidgetCreator<FlexiblePosition> {
     return button({
         ...params,
-        ...getImage(value),
+        ...createImage(value),
         tooltip: tooltipOf(value),
         onClick: () => store.set(value),
         isPressed: compute(store, active => active === value),
@@ -100,105 +100,101 @@ compute(toolType, type => type === "brush" && toolMode.get() === "absolute" && t
 compute(toolWidth, squareAspectRatio, (width, square) => square && toolLength.set(width));
 
 /*
- * WINDOW
- */
-
-const win = window({
-    title: "WorldPainter (beta-0)",
-    width: 258,
-    height: "auto",
-    colours: [24, 24],
-    content: [
-        groupbox({
-            text: "Tool shape",
-            content: [
-                center(toolShapes.map(shape => buttonOf(shape, toolShape))),
-            ],
-        }),
-        groupbox({
-            text: "Tool size and rotation",
-            content: [
-                horizontal({
-                    content: [
-                        graphicsOf("size"),
-                        spinner({
-                            minimum: 2,
-                            value: twoway(toolWidth),
-                        }),
-                        button({
-                            image: 29440,
-                            onClick: () => squareAspectRatio.set(!squareAspectRatio.get()),
-                            isPressed: squareAspectRatio,
-                            height: 14,
-                            width: 20,
-                        }),
-                        spinner({
-                            minimum: 2,
-                            value: twoway(toolLength),
-                            disabled: squareAspectRatio,
-                        }),
-                        graphicsOf("rotation"),
-                        spinner({
-                            value: twoway(toolRotation),
-                            step: 5,
-                            format: v => `${v}°`,
-                        }),
-                    ],
-                }),
-            ],
-        }),
-        groupbox({
-            text: "Tool type",
-            content: [
-                center(toolTypes.map(type => buttonOf(type, toolType))),
-            ],
-        }),
-        groupbox({
-            text: "Tool settings",
-            content: [
-                horizontal({
-                    content: [
-                        graphicsOf("sensitivity", visibilityIf(sensitivityEnabled)),
-                        graphicsOf("sensitivity_disabled", visibilityIf(not(sensitivityEnabled))),
-                        spinner({
-                            disabled: not(sensitivityEnabled),
-                            minimum: 0,
-                            maximum: 10,
-                            value: twoway(brushSensitivity),
-                        }),
-                        ...brushDirections.map(direction => buttonOf(direction, brushDirection, { disabled: directionDisabled, })),
-                    ],
-                }),
-                center(toolModes.map(mode => buttonOf(mode, toolMode, {
-                    ...visibilityIf(not(equals(toolType, "special"))),
-                    disabled: mode === "absolute" ? equals(toolType, "brush") : false,
-                }))),
-                center(specialModes.map(mode => buttonOf(mode, specialMode, visibilityIf(equals(toolType, "special"))))),
-            ],
-        }),
-        groupbox({
-            text: "Mountain shape",
-            ...visibilityIf(not(equals(toolType, "special"))),
-            content: [standardProfiles, cubicProfiles].map(profileList =>
-                horizontal({
-                    content: profileList.map(profile => buttonOf(profile, toolProfile, visibilityIf(not(equals(toolType, "special"))))),
-                }),
-            ),
-        }),
-        label({
-            text: "Copyright (c) 2024 Sadret",
-            disabled: true,
-            alignment: "centred",
-        })
-    ],
-    onOpen: () => isActive.set(true),
-    onClose: () => isActive.set(false),
-});
-
-/*
- * INITIALISATION
+ * WINDOW INITIALISATION
  */
 
 export function init(): void {
+    const win = window({
+        title: "WorldPainter (beta-0)",
+        width: 258,
+        height: "auto",
+        colours: [24, 24],
+        content: [
+            groupbox({
+                text: "Tool shape",
+                content: [
+                    center(toolShapes.map(shape => buttonOf(shape, toolShape))),
+                ],
+            }),
+            groupbox({
+                text: "Tool size and rotation",
+                content: [
+                    horizontal({
+                        content: [
+                            graphicsOf("size"),
+                            spinner({
+                                minimum: 2,
+                                value: twoway(toolWidth),
+                            }),
+                            button({
+                                image: 29440,
+                                onClick: () => squareAspectRatio.set(!squareAspectRatio.get()),
+                                isPressed: squareAspectRatio,
+                                height: 14,
+                                width: 20,
+                            }),
+                            spinner({
+                                minimum: 2,
+                                value: twoway(toolLength),
+                                disabled: squareAspectRatio,
+                            }),
+                            graphicsOf("rotation"),
+                            spinner({
+                                value: twoway(toolRotation),
+                                step: 5,
+                                format: v => `${v}°`,
+                            }),
+                        ],
+                    }),
+                ],
+            }),
+            groupbox({
+                text: "Tool type",
+                content: [
+                    center(toolTypes.map(type => buttonOf(type, toolType))),
+                ],
+            }),
+            groupbox({
+                text: "Tool settings",
+                content: [
+                    horizontal({
+                        content: [
+                            graphicsOf("sensitivity", visibilityIf(sensitivityEnabled)),
+                            graphicsOf("sensitivity_disabled", visibilityIf(not(sensitivityEnabled))),
+                            spinner({
+                                disabled: not(sensitivityEnabled),
+                                minimum: 0,
+                                maximum: 10,
+                                value: twoway(brushSensitivity),
+                            }),
+                            ...brushDirections.map(direction => buttonOf(direction, brushDirection, { disabled: directionDisabled, })),
+                        ],
+                    }),
+                    center(toolModes.map(mode => buttonOf(mode, toolMode, {
+                        ...visibilityIf(not(equals(toolType, "special"))),
+                        disabled: mode === "absolute" ? equals(toolType, "brush") : false,
+                    }))),
+                    center(specialModes.map(mode => buttonOf(mode, specialMode, visibilityIf(equals(toolType, "special"))))),
+                ],
+            }),
+            groupbox({
+                text: "Mountain shape",
+                ...visibilityIf(not(equals(toolType, "special"))),
+                content: [standardProfiles, cubicProfiles].map(profileList =>
+                    horizontal({
+                        content: profileList.map(profile => buttonOf(profile, toolProfile, visibilityIf(not(equals(toolType, "special"))))),
+                    }),
+                ),
+            }),
+            label({
+                text: "Copyright (c) 2024 Sadret",
+                disabled: true,
+                alignment: "centred",
+            })
+        ],
+        onOpen: () => isActive.set(true),
+        onClose: () => isActive.set(false),
+    });
+
     isActive.subscribe(value => value ? win.open() : win.close());
 }

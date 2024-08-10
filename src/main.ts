@@ -27,6 +27,5 @@ registerPlugin({
         Window.init();
         TerrainManager.init();
         ui.registerMenuItem("WorldPainter", () => Window.isActive.set(true));
-        Window.isActive.set(true);
     },
 });

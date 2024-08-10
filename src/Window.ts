@@ -93,7 +93,7 @@ export const isActive = store(false);
 
 export const toolShape = store<ToolShape>("circle");
 
-export const toolWidth = store(32);
+export const toolWidth = store(12);
 const squareAspectRatio = store(true);
 export const toolLength = store(toolWidth.get());
 export const toolRotation = store(0);

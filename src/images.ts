@@ -104,7 +104,7 @@ function createImageFromProfile(profile: Fun1Num, original: Fun1Num = () => 0, w
 
 const shape: Fun1Num = x => Profiles.cubic_3(Math.abs(x)) * 2 / 3;
 
-type ImageName = ToolShape | "size" | "rotation" | ToolType | ToolMode | "sensitivity" | "sensitivity_disabled" | BrushDirection | SpecialMode | keyof typeof Profiles;
+type ImageName = ToolShape | "size" | "link" | "rotation" | ToolType | ToolMode | "sensitivity" | "sensitivity_disabled" | BrushDirection | SpecialMode | keyof typeof Profiles;
 
 export function createImage(name: ImageName): ImageData {
     switch (name) {
@@ -113,8 +113,9 @@ export function createImage(name: ImageName): ImageData {
         case "circle": return createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABIklEQVR4nO2ZSwqEMBBEvXF7B+8bFx6ghpnFMAOGRPuTasmiwRBNwutHibgAWGbhy2DCwL8QEwgmkIXaENk27Mfxqff16PPQgBASMOEdl5/5tTHfet4DXFjH5WRcDO+nASLKjl4x5o5RYUDkhhFXDWiNa+udgXMDIoZGeGfMHTBDjdiNjOhZzwyIJDLCwhjqzNgNxykyZB3wPJUhxTEjwgwRIiO066syRAiN0O7X89ZJbYQ4zJsaUoKN8MgU0wxZB3fc4q3TlbyoGMNmhMXXcDcQPNQIlSElkRFuhkhyI1wzpCQyogXSJUPkAUaogaCycVYjzIDgIUaYA4HCGAYj3IAgqRHuQHABXMR/ljRAENTxdEBAVsMPALIafgCQ1fADgKxe4UnmPbbLZ4QAAAAASUVORK5CYII=");
         case "diamond": return createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAEQAAAAlCAYAAAD7u09NAAAACXBIWXMAAAsSAAALEgHS3X78AAABCUlEQVR4nO2YXQ6DIBCEuTHcwfsuDxxgTPvQpImVAPuH3YdJJAbcjB+zaAKQQvh4EGbgG4gwBGFIuouIIARhSGIlJB8Hamtvva4l75fF+1fr9zRtRFYY0+D413pXxk0bkhWJWCVmZv6jCKkDY/YtA4dERIa0yJAUGdIiQ5JUV9n+HEKMXUWsy2RHXUVivitCiJmIu/nsWwYOieA4mZoSQoIZ0Xueywwpxt9C4hlCzohQIQQLb9yaCPEMIaH/FRpdSyRDyoZEiGYILZwDtIkYNYIlQ/IDiFgipCoTwNm1RDIkb0iEaIbUjYjoGbllhhTP/0PwJzIvAM5kXgCcybwAOJN5AXAm8wLgTCcI9Ose0w+2GAAAAABJRU5ErkJggg==");
 
-        // tool site and rotation
+        // tool size and rotation
         case "size": return createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBGciAxOSBKdWwgMjAyNCAxMzo1ODoyOCArMDEwMJ8teacAAABNSURBVHicY/j//z8DOZgBRDy/ffg/MkZX9ByLPIYELhueE9JIso3/cdj8HE0MRSM20//j4KMEDtmh+p8aGp+T4tTn5AbO86GTAMgJVQC4NW2v7MTPiQAAAABJRU5ErkJggg==");
+        case "link": return createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAABUAAAAMCAYAAACNzvbFAAAACXBIWXMAAAsSAAALEgHS3X78AAAAaElEQVR4nGP4//8/A7UxA10MFVdW/o+OSZH/j24oSMH7z5//bz98GAXDNBKSxzBUHEkDNtfgwtgMZkA2FF2SGJdh08dAyND85mYMjE0NXkPzoQqIxdgsYkCPKHwuI8bl/+mSpAZ1jgIAmACDh9ix3AkAAAAASUVORK5CYII=");
         case "rotation": return createImageFromBase64("iVBORw0KGgoAAAANSUhEUgAAAA4AAAAOCAYAAAAfSC3RAAAACXBIWXMAAAsSAAALEgHS3X78AAAAJnRFWHRDcmVhdGlvbgBGciAxOSBKdWwgMjAyNCAxMzo1ODo1NCArMDEwMFJIGsoAAABPSURBVHicY/j//z8DOZgBm+Dz24f/I2OCGtE1PMdjAFZN+FzwH5dGXH56jk0jIU3/sWgepBqfQ+UwNBLS/JyYUCU5OvDZii0hkJVOKdIIAPnfZ1tDEES5AAAAAElFTkSuQmCC");
 
         // tool type

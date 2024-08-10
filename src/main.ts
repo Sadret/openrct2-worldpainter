@@ -13,12 +13,12 @@ import * as Window from "./Window";
 
 registerPlugin({
     name: "worldpainter",
-    version: "beta-0",
+    version: "beta-1",
     authors: ["Sadret"],
     type: "local",
     licence: "GPL-3.0",
-    minApiVersion: 80,
-    targetApiVersion: 80,
+    minApiVersion: 78, // 0.4.6 (crashes in older versions, probably before #20493)
+    targetApiVersion: 98,
     main: () => {
         if (typeof ui === "undefined")
             return console.log("[worldpainter] Loading cancelled: game runs in headless mode.");

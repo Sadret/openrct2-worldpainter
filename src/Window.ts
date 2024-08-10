@@ -22,6 +22,26 @@ type ImageName = Parameters<typeof createImage>[0];
  */
 
 function tooltipOf(str: string): string {
+    switch (str) {
+        // tool types
+        case "brush": return "Brush (click and hold to apply, drag around to change the affected area)";
+        case "sculpt": return "Sculpt (click and hold to activate, drag up and down to change the height)";
+        case "special": return "Special (click and hold to apply, drag around to change the affected area)";
+
+        // brush direction
+        case "up": return "Create a hill";
+        case "down": return "Create a valley";
+
+        // tool mode
+        case "relative": return "Relative (add mountain shape to existing terrain)";
+        case "absolute": return "Absolute (create mountain shape, ignoring existing terrain)";
+        case "plateau": return "Plateau (raise or lower surrounding terrain to cursor height)";
+
+        // special mode
+        case "smooth": return "Smooth (raise or lower terrain to remove vertical faces)";
+        case "flat": return "Flat (raise or lower terrain to flatten the surface)";
+        case "rough": return "Rough (raise random corners of the surface)";
+    }
     const temp = str.replace(/_/g, " ");
     return temp.charAt(0).toUpperCase() + temp.slice(1);
 }
@@ -105,7 +125,7 @@ compute(toolWidth, squareAspectRatio, (width, square) => square && toolLength.se
 
 export function init(): void {
     const win = window({
-        title: "WorldPainter (beta-0)",
+        title: "WorldPainter (beta-1)",
         width: 258,
         height: "auto",
         colours: [24, 24],
@@ -125,24 +145,27 @@ export function init(): void {
                             spinner({
                                 minimum: 2,
                                 value: twoway(toolWidth),
+                                tooltip: "Width of the tool",
                             }),
                             button({
-                                image: 29440,
+                                ...createImage("link"),
                                 onClick: () => squareAspectRatio.set(!squareAspectRatio.get()),
                                 isPressed: squareAspectRatio,
                                 height: 14,
-                                width: 20,
+                                tooltip: "Activate to have equal width and length",
                             }),
                             spinner({
                                 minimum: 2,
                                 value: twoway(toolLength),
                                 disabled: squareAspectRatio,
+                                tooltip: "Length of the tool",
                             }),
                             graphicsOf("rotation"),
                             spinner({
                                 value: twoway(toolRotation),
                                 step: 5,
                                 format: v => `${v}°`,
+                                tooltip: "Rotation of the tool",
                             }),
                         ],
                     }),
@@ -166,6 +189,7 @@ export function init(): void {
                                 minimum: 0,
                                 maximum: 10,
                                 value: twoway(brushSensitivity),
+                                tooltip: "Sensitivity (increase to apply the brush more often per second)",
                             }),
                             ...brushDirections.map(direction => buttonOf(direction, brushDirection, { disabled: directionDisabled, })),
                         ],
@@ -190,7 +214,7 @@ export function init(): void {
                 text: "Copyright (c) 2024 Sadret",
                 disabled: true,
                 alignment: "centred",
-            })
+            }),
         ],
         onOpen: () => isActive.set(true),
         onClose: () => isActive.set(false),

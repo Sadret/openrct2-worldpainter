@@ -102,7 +102,6 @@ abstract class BaseTool {
 
 class Brush extends BaseTool {
     private handle: number = -1;
-    private down: boolean = false;
 
     public getName(): "brush" {
         return "brush";
@@ -114,7 +113,6 @@ class Brush extends BaseTool {
     }
 
     protected onDown(): void {
-        this.down = true;
         TerrainManager.setSelection(this.getTileSelection());
         this.apply();
         this.handle = context.setInterval(() => this.apply(), msDelay.get());
@@ -122,19 +120,17 @@ class Brush extends BaseTool {
 
     protected onMove(event: ToolEventArgs): void {
         this.setTileSelection(event);
-        if (this.down)
+        if (event.isDown)
             TerrainManager.setSelection(this.getTileSelection());
     }
 
     protected onUp(): void {
-        this.down = false;
         context.clearInterval(this.handle);
     }
 }
 
 class Sculpt extends BaseTool {
     private cursorVertical: number = 0;
-    private down: boolean = false;
     private lastDelta: number = 0;
 
     public getName(): "sculpt" {
@@ -143,12 +139,11 @@ class Sculpt extends BaseTool {
 
     protected onDown(event: ToolEventArgs): void {
         this.cursorVertical = event.screenCoords.y;
-        this.down = true;
         TerrainManager.setSelection(this.getTileSelection());
     }
 
     protected onMove(event: ToolEventArgs): void {
-        if (this.down) {
+        if (event.isDown) {
             const cursorVerticalDiff = this.cursorVertical - event.screenCoords.y;
             const pixelPerStep = 1 << (4 - ui.mainViewport.zoom);
             const delta = Math.round(cursorVerticalDiff / pixelPerStep);
@@ -160,7 +155,6 @@ class Sculpt extends BaseTool {
     }
 
     protected onUp(): void {
-        this.down = false;
         this.lastDelta = 0;
         TerrainManager.softReset();
     }

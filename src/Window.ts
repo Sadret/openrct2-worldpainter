@@ -93,7 +93,7 @@ export const isActive = store(false);
 
 export const toolShape = store<ToolShape>("circle");
 
-export const toolWidth = store(12);
+export const toolWidth = store(15);
 const squareAspectRatio = store(true);
 export const toolLength = store(toolWidth.get());
 export const toolRotation = store(0);
@@ -101,7 +101,7 @@ export const toolRotation = store(0);
 export const toolType = store<ToolType>("brush");
 
 export const toolMode = store<ToolMode>("relative");
-export const brushSensitivity = store(3);
+export const brushSensitivity = store(5);
 export const brushDirection = store<BrushDirection>("up");
 export const specialMode = store<SpecialMode>("smooth");
 

@@ -60,7 +60,7 @@ The brush and sculpt tools can create mountains and valleys of various shapes.
 ## Planned Features
 
 Subscribe to my YouTube channel to learn about upcoming features:
-[Sadret Gaming](https://www.youtube.com/channel/UCLF2DGVDbo_Od5K4MeGNTRQ/)
+[Sadret Gaming / @sadret](https://www.youtube.com/@sadret)
 
 ## Support Me
 

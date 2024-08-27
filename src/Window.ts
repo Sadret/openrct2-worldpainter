@@ -125,7 +125,7 @@ compute(toolWidth, squareAspectRatio, (width, square) => square && toolLength.se
 
 export function init(): void {
     const win = window({
-        title: "WorldPainter (beta-1)",
+        title: "WorldPainter (v1.0.0)",
         width: 258,
         height: "auto",
         colours: [24, 24],

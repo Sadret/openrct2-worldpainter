@@ -1,2 +1,6 @@
-1.0.0 (????-??-??)
+1.0.0 (2024-08-30)
 ------------------------------------------------------------------------
+- create hills and valleys with a single mouse click
+- choose between several different mountain shapes
+- make the surface smooth, flat or rough
+- change the shape, size and rotation of the landscaping tool you are using

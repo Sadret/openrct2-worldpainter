@@ -1,4 +1,4 @@
-# OpenRCT2 WorldPainter plugin
+# OpenRCT2 WorldPainter
 
 An OpenRCT2 plugin to easily modify the terrain and create appealing landscapes.
 

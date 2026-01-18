@@ -14,7 +14,7 @@ export default {
 		terser({
 			format: {
 				preamble: "\
-// Copyright (c) 2024 Sadret\n\
+// Copyright (c) 2024-2026 Sadret\n\
 // This software is licensed under the GNU General Public License version 3.\n\
 // This software uses OpenRCT2-FlexUI by Basssiiie which is licensed under the MIT License.\n\
 // The full text of these licenses can be found here: https://github.com/Sadret/openrct2-worldpainter\

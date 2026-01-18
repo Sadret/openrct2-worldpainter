@@ -75,6 +75,6 @@ If you really want to support me, you can buy me a coffee:
 
 ## Copyright and License
 
-Copyright (c) 2024 Sadret\
+Copyright (c) 2024-2026 Sadret\
 The OpenRCT2 plugin "WorldPainter" is licensed under the GNU General Public License version 3.\
 This plugin uses OpenRCT2-FlexUI by Basssiiie which is licensed under the MIT License.

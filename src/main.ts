@@ -1,5 +1,5 @@
 /*****************************************************************************
- * Copyright (c) 2024 Sadret
+ * Copyright (c) 2024-2026 Sadret
 *
 * The OpenRCT2 plug-in "WorldPainter" is licensed
 * under the GNU General Public License version 3.

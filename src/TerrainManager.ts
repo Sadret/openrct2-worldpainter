@@ -290,7 +290,7 @@ export function rough(tiles: CoordsXY[]): void {
                 x: x << 5,
                 y: y << 5,
                 height: surface.baseHeight,
-                style: Math.round(Math.random() * 16),
+                style: Math.floor(Math.random() * 15),
             };
     });
 }
